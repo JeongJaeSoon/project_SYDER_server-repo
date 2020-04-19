@@ -44,7 +44,10 @@ class LoginController extends Controller
         $credentials = array_values($request->only('account', 'password', 'provider'));
 
         if (!$user = $this->authenticator->attempt(...$credentials)) {
-            throw new AuthenticationException();
+//            throw new AuthenticationException();
+            return response()->json([
+                'message' => 'Incorrect Account or Password'
+            ], 401);
         }
 
         $token = $user->createToken(ucfirst($credentials[2]) . ' Token')->accessToken;
