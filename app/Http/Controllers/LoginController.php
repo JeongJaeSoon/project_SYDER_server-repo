@@ -76,7 +76,7 @@ class LoginController extends Controller
         if (!Auth::guard($request->guard)->check()) {
             return response()->json([
                 'message' => 'Access Denied'
-            ], 404);
+            ], 401);
         }
 
         $request->user($request->guard)->token()->revoke();
