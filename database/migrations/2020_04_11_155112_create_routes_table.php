@@ -15,11 +15,11 @@ class CreateRoutesTable extends Migration
     {
         Schema::create('routes', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('starting_point');
-            $table->foreign('starting_point')->references('name')->on('waypoints');
-            $table->string('arrival_point');
-            $table->foreign('arrival_point')->references('name')->on('waypoints');
-            $table->unsignedInteger('travel_time');
+            $table->unsignedBigInteger('starting_point');
+            $table->foreign('starting_point')->references('id')->on('waypoints');
+            $table->unsignedBigInteger('arrival_point');
+            $table->foreign('arrival_point')->references('id')->on('waypoints');
+            $table->unsignedBigInteger('travel_time');
             $table->float('travel_distance');
             $table->timestamps();
         });

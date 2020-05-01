@@ -19,10 +19,10 @@ class CreateOrdersTable extends Migration
             // 2 : 도착완료(물건 하역 이전), 3 : 운행 완료(물건 하역 이후)
             // 9 : 배정대기(차량 부족으로 인한, 주문 대기)
             $table->smallInteger('order_status');
-            $table->string('sender');
-            $table->foreign('sender')->references('account')->on('users');
-            $table->string('receiver');
-            $table->foreign('receiver')->references('account')->on('users');
+            $table->unsignedBigInteger('sender');
+            $table->foreign('sender')->references('id')->on('users');
+            $table->unsignedBigInteger('receiver');
+            $table->foreign('receiver')->references('id')->on('users');
             $table->unsignedBigInteger('order_cart');
             $table->foreign('order_cart')->references('id')->on('carts');
             $table->unsignedBigInteger('order_route');
