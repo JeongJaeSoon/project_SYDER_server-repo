@@ -37,6 +37,7 @@ Route::prefix('waypoints')->group(function () {
     Route::delete('/{waypoint}', 'WaypointController@waypointDestroy');
 });
 
-Route::prefix('order')->group(function () {
-    Route::get('show', 'OrderController@orderShow');
-});
+Route::get('order/show', 'OrderController@orderShow');
+Route::post('order/register', 'OrderController@orderRegister');
+
+Route::get('user/requestReceiverInfo', 'UserController@receiverIndex');

@@ -27,10 +27,10 @@ class CreateOrdersTable extends Migration
             $table->foreign('order_cart')->references('id')->on('carts');
             $table->unsignedBigInteger('order_route');
             $table->foreign('order_route')->references('id')->on('routes');
-            $table->string('request_time');
-            $table->string('approved_time');
-            $table->string('depart_time');
-            $table->string('arrival_time');
+            $table->timestamp('request_time');
+            $table->timestamp('approved_time')->nullable();
+            $table->timestamp('depart_time')->nullable();
+            $table->timestamp('arrival_time')->nullable();
             $table->timestamps();
         });
     }

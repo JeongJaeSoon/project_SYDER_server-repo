@@ -17,7 +17,7 @@ class UserController extends Controller
             'password' => 'required|string|confirmed|min:8',
             'name' => 'required|string',
             'email' => 'required|email|unique:users,email',
-            'phone' => 'required|string|unique:users,phone',
+            'phone' => 'required|string|unique:users,phone|digits_between:11,12',
         ]);
 
         if ($validator->fails()) {
@@ -40,4 +40,22 @@ class UserController extends Controller
         ], 201);
     }
 
+    public function receiverIndex(Request $request)
+    {
+        // [CHECK VALIDATION]
+        $validator = Validator::make($request->all(), [
+            'phone' => 'required|string|digits_between:11,12',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors(),
+            ], 422);
+        }
+
+        $result = User::select('id', 'name')->where('phone', $request->phone)->get();
+        return response()->json([
+            'receiver' => $result
+        ], 200);
+    }
 }
