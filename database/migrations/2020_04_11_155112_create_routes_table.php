@@ -19,7 +19,7 @@ class CreateRoutesTable extends Migration
             $table->foreign('starting_point')->references('name')->on('waypoints');
             $table->string('arrival_point');
             $table->foreign('arrival_point')->references('name')->on('waypoints');
-            $table->string('travel_time');
+            $table->unsignedInteger('travel_time');
             $table->float('travel_distance');
             $table->timestamps();
         });

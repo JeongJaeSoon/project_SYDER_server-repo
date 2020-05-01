@@ -29,6 +29,7 @@ class LoginController extends Controller
      */
     public function login(Request $request)
     {
+        // [CHECK VALIDATION]
         $validator = Validator::make($request->all(), [
             'account' => 'required|string',
             'password' => 'required|string|min:8',
@@ -61,6 +62,7 @@ class LoginController extends Controller
 
     public function logout(Request $request)
     {
+        // [CHECK VALIDATION]
         $validator = Validator::make($request->all(), [
             'guard' => 'required|string',
         ]);

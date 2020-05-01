@@ -19,6 +19,7 @@ class WaypointController extends Controller
 
     public function waypointStore(Request $request)
     {
+        // [CHECK VALIDATION]
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|unique:waypoints,name',
             'lat' => 'required|numeric|between:35.894756152459216,35.89740573228205',
@@ -45,6 +46,7 @@ class WaypointController extends Controller
 
     public function waypointUpdate(Request $request, Waypoint $waypoint)
     {
+        // [CHECK VALIDATION]
         $validator = Validator::make($request->all(), [
             'lat' => 'required|numeric|between:35.894756152459216,35.89740573228205',
             'lng' => 'required|numeric|between:128.62000526129742,128.6236530319387',

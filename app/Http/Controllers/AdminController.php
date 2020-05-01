@@ -11,6 +11,7 @@ class AdminController extends Controller
 {
     public function adminRegister(Request $request)
     {
+        // [CHECK VALIDATION]
         $validator = Validator::make($request->all(), [
             'account' => 'required|email|unique:admins,account',
             'password' => 'required|string|confirmed|min:8',

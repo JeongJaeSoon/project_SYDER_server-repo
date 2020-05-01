@@ -11,6 +11,7 @@ class UserController extends Controller
 {
     public function userRegister(Request $request)
     {
+        // [CHECK VALIDATION]
         $validator = Validator::make($request->all(), [
             'account' => 'required|string|unique:users,account',
             'password' => 'required|string|confirmed|min:8',
