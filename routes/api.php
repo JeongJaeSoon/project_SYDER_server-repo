@@ -39,6 +39,8 @@ Route::prefix('waypoints')->group(function () {
 });
 
 Route::prefix('order')->group(function () {
+    Route::get('/', 'OrderController@orderIndex');
+    Route::get('check', 'OrderController@orderCheck');
     Route::get('show', 'OrderController@orderShow');
     Route::post('register', 'OrderController@orderRegister');
 });

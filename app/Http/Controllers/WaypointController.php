@@ -58,7 +58,7 @@ class WaypointController extends Controller
             ], 422);
         }
 
-        if (!$request->guard === 'admin') {
+        if (!($request->guard === 'admin')) {
             return response()->json([
                 'message' => 'This page is only accessible to admin',
             ], 403);
@@ -98,7 +98,7 @@ class WaypointController extends Controller
             ], 422);
         }
 
-        if (!$request->guard === 'admin') {
+        if (!($request->guard === 'admin')) {
             return response()->json([
                 'message' => 'This page is only accessible to admin',
             ], 403);
@@ -136,7 +136,7 @@ class WaypointController extends Controller
             ], 422);
         }
 
-        if (!$request->guard === 'admin') {
+        if (!($request->guard === 'admin')) {
             return response()->json([
                 'message' => 'This page is only accessible to admin',
             ], 403);

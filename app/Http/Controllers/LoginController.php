@@ -67,17 +67,24 @@ class LoginController extends Controller
             'guard' => 'required|string',
         ]);
 
+        // [Client Errors]
         if ($validator->fails()) {
             return response()->json([
                 'message' => $validator->errors()
             ], 422);
         }
 
+        if (!($request->guard === 'admin' || $request->guard === 'user')) {
+            return response()->json([
+                'message' => 'This page is only accessible to admin or user',
+            ], 403);
+        }
+
         if (!Auth::guard($request->guard)->check()) {
             return response()->json([
                 'message' => 'Access Denied'
             ], 401);
-        }
+        }   // [Client Errors]
 
         $request->user($request->guard)->token()->revoke();
         Auth::guard()->logout();

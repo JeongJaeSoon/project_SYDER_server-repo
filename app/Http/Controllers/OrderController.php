@@ -11,6 +11,84 @@ use Illuminate\Support\Facades\Validator;
 
 class OrderController extends Controller
 {
+    public function orderIndex(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'guard' => 'required|string',
+        ]);
+
+        // [Client Errors]
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        if (!($request->guard === 'admin')) {
+            return response()->json([
+                'message' => 'This page is only accessible to admin',
+            ], 403);
+        }
+
+        if (!Auth::guard($request->guard)->check()) {
+            return response()->json([
+                'message' => 'Access Denied'
+            ], 401);
+        }   // [Client Errors]
+
+        $orders = Order::get();
+        return response()->json([
+            'message' => 'Orders Indexing Success',
+            'orders' => $orders,
+        ], 200);
+    }
+
+    public function orderCheck(Request $request)
+    {
+        // [CHECK VALIDADATION]
+        $validator = Validator::make($request->all(), [
+            'guard' => 'required|string'
+        ]);
+
+        // [Client Errors]
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        if (!($request->guard === 'user')) {
+            return response()->json([
+                'message' => 'This page is only accessible to user',
+            ], 403);
+        }
+
+        if (!Auth::guard($request->guard)->check()) {
+            return response()->json([
+                'message' => 'Access Denied'
+            ], 401);
+        }   // [Client Errors]
+
+        $userId = $request->user($request->guard)->id;
+
+        $order = Order::where('sender', $userId)
+            ->where('order_status', '<>', '3')
+            ->get();
+
+        if ($order->count() >= 1) {
+            return response()->json([
+                'message' => 'There is already a order in progress',
+                'order' => $order,
+                'availability' => false,
+            ], 200);
+        }
+
+        return response()->json([
+            'message' => 'There are no orders in progress',
+            'availability' => true,
+        ], 200);
+    }
+
     public function orderShow(Request $request)
     {
         // [CHECK VALIDATION]
@@ -27,7 +105,7 @@ class OrderController extends Controller
             ], 422);
         }
 
-        if (!$request->guard === 'user') {
+        if (!($request->guard === 'user')) {
             return response()->json([
                 'message' => 'This page is only accessible to user',
             ], 403);
@@ -133,7 +211,7 @@ class OrderController extends Controller
     {
         // [CHECK VALIDATION]
         $validator = Validator::make($request->all(), [
-            'sender' => 'required|numeric',
+//            'sender' => 'required|numeric',
             'receiver' => 'required|numeric',
             'order_cart' => 'required|numeric',
             'order_route' => 'required|numeric',
@@ -164,7 +242,7 @@ class OrderController extends Controller
             // TODO : 동의 시, node.js 를 통해 출발지로 차량이동 명령 전달
         }
 
-        if (!$request->guard === 'user') {
+        if (!($request->guard === 'user')) {
             return response()->json([
                 'message' => 'This page is only accessible to user',
             ], 403);
@@ -176,10 +254,13 @@ class OrderController extends Controller
             ], 401);
         }   // [Client Errors]
 
+        $sender = $request->user($request->guard);
+
         // [QUERY] Register order
         $order = Order::create([
             'order_status' => 0,
-            'sender' => $request->sender,
+//            'sender' => $request->sender,
+            'sender' => $sender->id,
             'receiver' => $request->receiver,
             'order_cart' => $request->order_cart,
             'order_route' => $request->order_route,
