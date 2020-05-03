@@ -19,7 +19,6 @@
 - 기초 아이디어 제안 및 구성
 
 <img src="https://user-images.githubusercontent.com/53788601/79687579-451bd500-8283-11ea-9ab8-b9ce6868ee8a.PNG" width="600px">
----
 
 ### [2020.02.11 ~ 2020.02.19]
 - SYDER Project 진행방향 및 아이디어 기획
@@ -42,14 +41,10 @@
 
 <img src="https://user-images.githubusercontent.com/53788601/79687240-d3428c00-8280-11ea-858d-c5397abb64b0.PNG" width="500px">
 <br>
- 
----
 
 ### [2020.02.21 ~ 2020.02.23]
 ##### DB Configuration
 <img src="https://user-images.githubusercontent.com/53788601/79687735-574a4300-8284-11ea-89b9-9ec00d7de452.png" width="500px">
-    
- ---
  
 ### [2020.02.24 ~ 2020.03.07]
 ##### Set Development Environment
@@ -65,9 +60,7 @@
     - 관리자, 발신자, 수신자, 차량 Client 의 요청 처리를 분산
 
 - RDS 생성 및 Laravel 기초 Migration 작성
-    
-    
- ---
+
  
 ### [2020.03.08 ~ 2020.03.23]
 - Dev administartor page
@@ -75,8 +68,7 @@
     - Admin register, login, logout
     - Waypoint register, show, update, delete
     
- ---
- 
+     
 ### [2020.03.24 ~ 2020.04.09]
 - Apply Multi Authorization ([passport-multiauth](https://github.com/sfelix-martins/passport-multiauth))
 ######
@@ -84,8 +76,7 @@
     - Apply request data validation(admin, user, wayponint)
     - Integration and Cleanup api route
     
- ---
- 
+    
 ### [2020.04.10 ~ 2020.05.03]
 - Code Refactoring
 - Summary of 'HTTP Response CODE'
