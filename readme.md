@@ -19,8 +19,6 @@
 - 기초 아이디어 제안 및 구성
 
 <img src="https://user-images.githubusercontent.com/53788601/79687579-451bd500-8283-11ea-9ab8-b9ce6868ee8a.PNG" width="600px">
-<br>
-
 ---
 
 ### [2020.02.11 ~ 2020.02.19]
