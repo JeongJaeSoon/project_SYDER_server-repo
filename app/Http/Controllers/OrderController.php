@@ -6,6 +6,7 @@ use App\Cart;
 use App\Order;
 use App\Route;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
 class OrderController extends Controller
@@ -14,57 +15,71 @@ class OrderController extends Controller
     {
         // [CHECK VALIDATION]
         $validator = Validator::make($request->all(), [
-            'startingPoint_id' => 'required|numeric',
-            'arrivalPoint_id' => 'required|numeric'
+            'startingId' => 'required|numeric',
+            'arrivalId' => 'required|numeric',
+            'guard' => 'required|string',
         ]);
 
+        // [Client Errors]
         if ($validator->fails()) {
             return response()->json([
-                'message' => $validator->errors(),
+                'message' => $validator->errors()
             ], 422);
         }
 
+        if (!$request->guard === 'user') {
+            return response()->json([
+                'message' => 'This page is only accessible to user',
+            ], 403);
+        }
+
+        if (!Auth::guard($request->guard)->check()) {
+            return response()->json([
+                'message' => 'Access Denied'
+            ], 401);
+        }   // [Client Errors]
+
         // [SET] Variable
-        $startingPoint_id = $request->startingPoint_id;
-        $arrivalPoint_id = $request->arrivalPoint_id;
+        $startingId = $request->startingId;
+        $arrivalId = $request->arrivalId;
         $routeInfo = null;
 
         // [QUERY] Registered route search
-        for ($route_count = 0; $route_count < 2; $route_count++) {
+        for ($routeCount = 0; $routeCount < 2; $routeCount++) {
             $routeInfo = Route::select('id', 'travel_time')
-                ->where('starting_point', $startingPoint_id)
-                ->where('arrival_point', $arrivalPoint_id)
+                ->where('starting_point', $startingId)
+                ->where('arrival_point', $arrivalId)
                 ->get()->first();
 
             if ($routeInfo == null) {
-                $tmp_pointID = $startingPoint_id;
-                $startingPoint_id = $arrivalPoint_id;
-                $arrivalPoint_id = $tmp_pointID;
+                $tmpID = $startingId;
+                $startingId = $arrivalId;
+                $arrivalId = $tmpID;
             } else  break;
         }
 
         // [IF] There is no registered route => RETURN
         if ($routeInfo == null) {
             return response()->json([
-                'message' => 'Routes Not Available'
+                'message' => 'There is no available routes'
             ], 200);
         }   // [QUERY END]
 
         // [QUERY] Check cart existed at the starting point
-        $cart_id = Cart::select('id')
+        $cartId = Cart::select('id')
             ->where('status', 0)
-            ->where('cart_location', $request->startingPoint_id)
+            ->where('cart_location', $request->startingId)
             ->get()->first();
 
         // [IF] There is a cart at the starting point => RETURN
-        if ($cart_id != null) {
+        if ($cartId != null) {
             // TODO : 일정 시간 초과 후 운행 상태 1 지속 시, 0으로 초기화
-            $cart_id->update(['status' => 1]);
+            $cartId->update(['status' => 1]);
             return response()->json([
                 'message' => 'There is a cart at the starting point',
                 'expected_arrivalTime' => 0,
                 'travel_time' => $routeInfo->travel_time,
-                'order_cart' => $cart_id->id,
+                'order_cart' => $cartId->id,
                 'order_route' => $routeInfo->id,
                 'cartMove_needs' => false,
                 'cartMove_routeId' => null,
@@ -73,35 +88,35 @@ class OrderController extends Controller
 
 
         // [QUERY] Find cart at nearby waypoint
-        $closePaths_first = Route::select('id', 'arrival_point', 'travel_time')
-            ->where('starting_point', $request->startingPoint_id);
+        $closePathsFirst = Route::select('id', 'arrival_point', 'travel_time')
+            ->where('starting_point', $request->startingId);
         $closePaths = Route::select('id', 'starting_point as waypoint', 'travel_time')
-            ->where('arrival_point', $request->startingPoint_id)
-            ->union($closePaths_first)
+            ->where('arrival_point', $request->startingId)
+            ->union($closePathsFirst)
             ->orderBy('travel_time')
             ->get();
 
-        for ($path_count = 0; $path_count < $closePaths->count(); $path_count++) {
-            $nearBy_Waypoint = $closePaths[$path_count];
-            $cart_id = Cart::select('id')
+        for ($pathCount = 0; $pathCount < $closePaths->count(); $pathCount++) {
+            $nearWaypoint = $closePaths[$pathCount];
+            $cartId = Cart::select('id')
                 ->where('status', 0)
-                ->where('cart_location', $nearBy_Waypoint->waypoint)
+                ->where('cart_location', $nearWaypoint->waypoint)
                 ->get()->first();
 
-            if ($cart_id == null) continue;
+            if ($cartId == null) continue;
 
             // [IF] There is a cart near the starting point => RETURN
-            if ($cart_id != null) {
+            if ($cartId != null) {
                 // TODO : 일정 시간 초과 후 운행 상태 1 지속 시, 0으로 초기화
-                $cart_id->update(['status' => 1]);
+                $cartId->update(['status' => 1]);
                 return response()->json([
                     'message' => 'Cart moves to the starting point',
-                    'expected_arrivalTime' => $nearBy_Waypoint->travel_time,
+                    'expected_arrivalTime' => $nearWaypoint->travel_time,
                     'travel_time' => $routeInfo->travel_time,
-                    'order_cart' => $cart_id->id,
+                    'order_cart' => $cartId->id,
                     'order_route' => $routeInfo->id,
                     'cartMove_needs' => true,
-                    'cartMove_routeId' => $nearBy_Waypoint->id,
+                    'cartMove_routeId' => $nearWaypoint->id,
                 ], 200);
             }
         }
@@ -123,11 +138,13 @@ class OrderController extends Controller
             'order_cart' => 'required|numeric',
             'order_route' => 'required|numeric',
             'cartMove_needs' => 'required|boolean',
+            'guard' => 'required|string',
         ]);
 
+        // [Client Errors]
         if ($validator->fails()) {
             return response()->json([
-                'message' => $validator->errors(),
+                'message' => $validator->errors()
             ], 422);
         }
 
@@ -143,9 +160,21 @@ class OrderController extends Controller
                 ], 422);
             }
 
-            // TODO : node.js 를 통해 출발지로 차량이동 명령 전달
             // TODO : 수신자에게 동의여부를 확인
+            // TODO : 동의 시, node.js 를 통해 출발지로 차량이동 명령 전달
         }
+
+        if (!$request->guard === 'user') {
+            return response()->json([
+                'message' => 'This page is only accessible to user',
+            ], 403);
+        }
+
+        if (!Auth::guard($request->guard)->check()) {
+            return response()->json([
+                'message' => 'Access Denied'
+            ], 401);
+        }   // [Client Errors]
 
         // [QUERY] Register order
         $order = Order::create([

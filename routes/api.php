@@ -24,6 +24,7 @@ Route::middleware('auth:admin')->get('/admin', function (Request $request) {
 
 Route::post('login', 'LoginController@login');
 Route::post('logout', 'LoginController@logout');
+Route::get('authCheck', 'LoginController@authCheck');
 
 Route::prefix('register')->group(function () {
     Route::post('admins', 'AdminController@adminRegister');
@@ -37,7 +38,9 @@ Route::prefix('waypoints')->group(function () {
     Route::delete('/{waypoint}', 'WaypointController@waypointDestroy');
 });
 
-Route::get('order/show', 'OrderController@orderShow');
-Route::post('order/register', 'OrderController@orderRegister');
+Route::prefix('order')->group(function () {
+    Route::get('show', 'OrderController@orderShow');
+    Route::post('register', 'OrderController@orderRegister');
+});
 
-Route::get('user/requestReceiverInfo', 'UserController@receiverIndex');
+Route::get('user/request', 'UserController@receiverSearch');

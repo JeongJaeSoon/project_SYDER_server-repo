@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
@@ -40,18 +41,32 @@ class UserController extends Controller
         ], 201);
     }
 
-    public function receiverIndex(Request $request)
+    public function receiverSearch(Request $request)
     {
         // [CHECK VALIDATION]
         $validator = Validator::make($request->all(), [
             'phone' => 'required|string|digits_between:11,12',
+            'guard' => 'required|string',
         ]);
 
+        // [Client Errors]
         if ($validator->fails()) {
             return response()->json([
-                'message' => $validator->errors(),
+                'message' => $validator->errors()
             ], 422);
         }
+
+        if (!$request->guard === 'admin') {
+            return response()->json([
+                'message' => 'This page is only accessible to admin',
+            ], 403);
+        }
+
+        if (!Auth::guard($request->guard)->check()) {
+            return response()->json([
+                'message' => 'Access Denied'
+            ], 401);
+        }   // [Client Errors]
 
         $result = User::select('id', 'name')->where('phone', $request->phone)->get();
         return response()->json([
