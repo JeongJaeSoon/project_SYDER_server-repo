@@ -88,7 +88,7 @@
     - 401 : Auth Error
     - 404 : Not Found
 
-- Order Request API development ([Refer API Document](https://grey-star-9269.postman.co/collections/10115451-a7fb597e-b735-4037-a45d-582566a29add?workspace=01a0f846-42bf-4c9f-ae9f-46f5c344f4f2))
+- Order Request API development ([Refer API Document](https://documenter.getpostman.com/view/10115451/SzYbyxGK?version=latest))
 ######
     - Order Index : Index list of registered orders
     - Order Check : Check orders in progress when the user app starts
