@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Validator;
 
 class OrderController extends Controller
 {
+    // API : [GET] /api/order
     public function orderIndex(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -43,6 +44,74 @@ class OrderController extends Controller
         ], 200);
     }
 
+    // API : [POST] /api/order
+    public function orderRegister(Request $request)
+    {
+        // [CHECK VALIDATION]
+        $validator = Validator::make($request->all(), [
+//            'sender' => 'required|numeric',
+            'receiver' => 'required|numeric',
+            'order_cart' => 'required|numeric',
+            'order_route' => 'required|numeric',
+            'cartMove_needs' => 'required|boolean',
+            'guard' => 'required|string',
+        ]);
+
+        // [Client Errors]
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        // [IF] Cart need to move to the starting point
+        if ((bool)$request->cartMove_needs) {
+            $validator = Validator::make($request->all(), [
+                'cartMove_routeId' => 'required|numeric',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => $validator->errors(),
+                ], 422);
+            }
+
+            // TODO : 수신자에게 동의여부를 확인
+            // TODO : 동의 시, node.js 를 통해 출발지로 차량이동 명령 전달
+        }
+
+        if (!($request->guard === 'user')) {
+            return response()->json([
+                'message' => 'This page is only accessible to user',
+            ], 403);
+        }
+
+        if (!Auth::guard($request->guard)->check()) {
+            return response()->json([
+                'message' => 'Access Denied'
+            ], 401);
+        }   // [Client Errors]
+
+        $sender = $request->user($request->guard);
+
+        // [QUERY] Register order
+        $order = Order::create([
+            'order_status' => 0,
+//            'sender' => $request->sender,
+            'sender' => $sender->id,
+            'receiver' => $request->receiver,
+            'order_cart' => $request->order_cart,
+            'order_route' => $request->order_route,
+            'request_time' => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'Order Registration Success',
+            'waypoint' => $order,
+        ], 201);
+    }
+
+    // API : [GET] /api/order/check
     public function orderCheck(Request $request)
     {
         // [CHECK VALIDADATION]
@@ -89,6 +158,7 @@ class OrderController extends Controller
         ], 200);
     }
 
+    // API : [GET] /api/order/show
     public function orderShow(Request $request)
     {
         // [CHECK VALIDATION]
@@ -205,71 +275,5 @@ class OrderController extends Controller
             'message' => 'There is no cart that can move',
             'waiting_orderNum' => $waiting_order,
         ], 200);
-    }
-
-    public function orderRegister(Request $request)
-    {
-        // [CHECK VALIDATION]
-        $validator = Validator::make($request->all(), [
-//            'sender' => 'required|numeric',
-            'receiver' => 'required|numeric',
-            'order_cart' => 'required|numeric',
-            'order_route' => 'required|numeric',
-            'cartMove_needs' => 'required|boolean',
-            'guard' => 'required|string',
-        ]);
-
-        // [Client Errors]
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => $validator->errors()
-            ], 422);
-        }
-
-        // [IF] Cart need to move to the starting point
-        if ((bool)$request->cartMove_needs) {
-            $validator = Validator::make($request->all(), [
-                'cartMove_routeId' => 'required|numeric',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'message' => $validator->errors(),
-                ], 422);
-            }
-
-            // TODO : 수신자에게 동의여부를 확인
-            // TODO : 동의 시, node.js 를 통해 출발지로 차량이동 명령 전달
-        }
-
-        if (!($request->guard === 'user')) {
-            return response()->json([
-                'message' => 'This page is only accessible to user',
-            ], 403);
-        }
-
-        if (!Auth::guard($request->guard)->check()) {
-            return response()->json([
-                'message' => 'Access Denied'
-            ], 401);
-        }   // [Client Errors]
-
-        $sender = $request->user($request->guard);
-
-        // [QUERY] Register order
-        $order = Order::create([
-            'order_status' => 0,
-//            'sender' => $request->sender,
-            'sender' => $sender->id,
-            'receiver' => $request->receiver,
-            'order_cart' => $request->order_cart,
-            'order_route' => $request->order_route,
-            'request_time' => now(),
-        ]);
-
-        return response()->json([
-            'message' => 'Order Registration Success',
-            'waypoint' => $order,
-        ], 201);
     }
 }

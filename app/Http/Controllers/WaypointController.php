@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Validator;
 
 class WaypointController extends Controller
 {
+    // API : [GET] /api/waypoints
     public function waypointIndex(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -41,6 +42,7 @@ class WaypointController extends Controller
         ], 200);
     }
 
+    // API : [POST] /api/waypoints
     public function waypointStore(Request $request)
     {
         // [CHECK VALIDATION]
@@ -82,6 +84,7 @@ class WaypointController extends Controller
         ], 201);
     }
 
+    // API : [PATCH] /api/waypoints/{waypoint}
     public function waypointUpdate(Request $request, Waypoint $waypoint)
     {
         // [CHECK VALIDATION]
@@ -123,6 +126,7 @@ class WaypointController extends Controller
         ], 200);
     }
 
+    // API : [DELETE] /api/waypoints/{waypoint}
     public function waypointDestroy(Request $request, Waypoint $waypoint)
     {
         $validator = Validator::make($request->all(), [

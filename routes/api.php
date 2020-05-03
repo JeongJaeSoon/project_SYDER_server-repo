@@ -40,9 +40,9 @@ Route::prefix('waypoints')->group(function () {
 
 Route::prefix('order')->group(function () {
     Route::get('/', 'OrderController@orderIndex');
+    Route::post('/', 'OrderController@orderRegister');
     Route::get('check', 'OrderController@orderCheck');
     Route::get('show', 'OrderController@orderShow');
-    Route::post('register', 'OrderController@orderRegister');
 });
 
 Route::get('user/request', 'UserController@receiverSearch');

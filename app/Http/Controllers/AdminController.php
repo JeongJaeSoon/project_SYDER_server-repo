@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Validator;
 
 class AdminController extends Controller
 {
+    // API : [POST] /api/register/admins
     public function adminRegister(Request $request)
     {
         // [CHECK VALIDATION]

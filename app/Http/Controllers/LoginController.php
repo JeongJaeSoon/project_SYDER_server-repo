@@ -27,6 +27,8 @@ class LoginController extends Controller
      * @return array|\Illuminate\Http\JsonResponse
      * @throws AuthenticationException
      */
+
+    // API : [POST] /api/login
     public function login(Request $request)
     {
         // [CHECK VALIDATION]
@@ -60,6 +62,7 @@ class LoginController extends Controller
         ], 200);
     }
 
+    // API : [POST] /api/logout
     public function logout(Request $request)
     {
         // [CHECK VALIDATION]
@@ -95,6 +98,7 @@ class LoginController extends Controller
         ], 200);
     }
 
+    // API : [GET] /api/authCheck
     public function authCheck(Request $request)
     {
         $validator = Validator::make($request->all(), [

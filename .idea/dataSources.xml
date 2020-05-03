@@ -7,5 +7,14 @@
       <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
       <jdbc-url>jdbc:mysql://bokvengers-database.c3ddptwdjemb.ap-northeast-2.rds.amazonaws.com:3306</jdbc-url>
     </data-source>
+    <data-source source="LOCAL" name="13.124.189.186" uuid="3725a88a-6275-4b84-aa4b-551c5cdb5514">
+      <driver-ref>mysql.8</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
+      <jdbc-url>jdbc:mysql://13.124.189.186:3306/SYDER</jdbc-url>
+      <driver-properties>
+        <property name="serverTimezone" value="Asia/Seoul" />
+      </driver-properties>
+    </data-source>
   </component>
 </project>

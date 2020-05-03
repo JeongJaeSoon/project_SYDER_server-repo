@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
+    // API : [POST] /api/register/users
     public function userRegister(Request $request)
     {
         // [CHECK VALIDATION]
@@ -41,6 +42,7 @@ class UserController extends Controller
         ], 201);
     }
 
+    // API : [GET] /api/user/request
     public function receiverSearch(Request $request)
     {
         // [CHECK VALIDATION]
