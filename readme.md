@@ -70,14 +70,16 @@
  ---
  
 ### [2020.03.08 ~ 2020.03.23]
-##### Dev administartor page
+- Dev administartor page
+######
     - Admin register, login, logout
     - Waypoint register, show, update, delete
     
  ---
  
 ### [2020.03.24 ~ 2020.04.09]
-##### Apply Multi Authorization ([passport-multiauth](https://github.com/sfelix-martins/passport-multiauth))
+- Apply Multi Authorization ([passport-multiauth](https://github.com/sfelix-martins/passport-multiauth))
+######
     - Admin & User register, login, logout       
     - Apply request data validation(admin, user, wayponint)
     - Integration and Cleanup api route
@@ -95,7 +97,7 @@
     - 401 : Auth Error
     - 404 : Not Found
 
-- Order Request API development
+- Order Request API development ([Refer Document](https://grey-star-9269.postman.co/collections/10115451-a7fb597e-b735-4037-a45d-582566a29add?workspace=01a0f846-42bf-4c9f-ae9f-46f5c344f4f2))
 ######
     - Order Index : Index list of registered orders
     - Order Check : Check orders in progress when the user app starts
