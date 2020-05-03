@@ -56,8 +56,10 @@
 ### [2020.02.24 ~ 2020.03.07]
 ##### Set Development Environment
 
+<p>
 <img src="https://user-images.githubusercontent.com/53788601/79687328-857a5380-8281-11ea-8f6d-05ea92429b95.jpg" width="275px">
 <img src="https://user-images.githubusercontent.com/53788601/79687327-84492680-8281-11ea-856c-4e3122567589.png" width="300px">
+</p>
 
 - EC2 인스턴스 생성 및 Nginx 설정
 ######
