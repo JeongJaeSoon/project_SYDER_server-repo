@@ -1,0 +1,316 @@
+@startuml
+
+title SYDER Order Sequence diagram
+
+actor Sender
+actor Receiver
+boundary Android
+control Laravel
+database RDS
+control Node.js
+boundary Car
+
+'==Before Order==
+'Sender -> Android : 로그인
+'
+'activate Android
+'Receiver -> Android : 로그인
+'
+'Android -> Laravel : Request : ID, PW 입력, 웨이포인트 목록
+'activate Laravel
+'
+'Laravel -> RDS : Request : ID, PW 확인
+'activate Laravel
+'
+'alt 로그인 실패
+'RDS --> Laravel : Response : 일치하는 ID, PW 가 없음
+'Laravel --> Android : Response : 로그인 에러
+'
+'else 로그인 성공
+'
+'RDS -> RDS : 토큰 발급
+'
+'RDS --> Laravel : Response : 유저정보, 토근
+'Laravel --> Android : Response : 유저정보, 토큰
+'deactivate Laravel
+'end
+'
+'activate Laravel
+'Laravel -> RDS : Request : 웨이포인트 목록 조회
+'RDS -> Laravel : Response : 웨이포인트 조회 결과
+'Laravel -> Android : Response : 웨이포인트 조회 결과
+'deactivate Laravel
+'
+'Android -> Laravel : Response : 등록된 주문 정보 조회(토큰)
+'activate Laravel
+'
+'Laravel -> RDS : Request : 주문 목록 조회
+'
+'alt 진행 중인 주문 존재
+'RDS -> Laravel : Response : 주문 정보 조회 결과
+'Laravel -> Android : Response : 주문 정보 조회 결과
+'deactivate Laravel
+'end
+'
+'note right
+'등록된 주문이 존재할 경우,
+'주문 요청 불가
+'end note
+'
+'deactivate Android
+'
+'
+'==Start Order==
+'
+'Sender -> Android : 출발, 도착지 입력
+'
+'activate Android
+'Android -> Laravel : Request : 출발~도착지 예상 소요시간 요청
+'
+'activate Laravel
+'Laravel -> RDS : Request : 경로 조회
+'activate Laravel
+'
+'alt 출발~도착지 경로가 없을 경우
+'RDS --> Laravel : Response : 경로 없음
+'Laravel --> Android : Response : 조회 거부
+'deactivate Laravel
+'
+'else 출발~도착지 경로가 있을 경우
+'RDS -> Laravel : Response : 예상 소요시간
+'activate Laravel
+'
+'alt 가용차량이 없을 경우
+'Laravel -> RDS : Request : 대기 주문 건수 조회
+'RDS -> Laravel : Response : 대기 주문 건수
+'Laravel -> Android : Response : 대기 주문 건수, 예상 소요시간
+'end
+'
+'RDS -> RDS : 차량 상태 운행 예약 변경
+'note left
+'운행 예약 상태에서 일정시간
+'(운행 요청 미실시)초과 시, 운행 취소
+'end note
+'
+'alt 가용 차량이 출발지에 있을 경우
+'
+'Laravel -> Android : Response : 주문 정보, 예상 소요시간
+'
+'else 가용 차량이 있지만, 출발지에 없을 경우
+'Laravel -> RDS : Request : 차량 예상 도착 시간 조회
+'RDS -> Laravel : Response : 차량 예상 도착 시간
+'
+'Laravel -> Android : Response : 주문 정보, 예상 소요시간, 예상 도착 시간
+'deactivate Laravel
+'deactivate Laravel
+'
+'end
+'deactivate Android
+'
+'end
+'
+'Sender -> Android : 수신자 연락처 입력
+'activate Android
+'
+'Android -> Laravel : Request : 수신자 정보 요청
+'activate Laravel
+'Laravel -> RDS : Request : 수신자 정보 조회
+'
+'alt 등록된 수신자가 없을 경우
+'RDS -> Laravel : Response : 등록된 수신자 없음
+'Laravel -> Android : Response : 수신자 정보 조회 거절
+'else 등록된 수신자가 있을 경우
+'RDS -> Laravel : Response : 수신자 정보
+'Laravel -> Android : Response : 수신자 정보 자동입력
+'deactivate Laravel
+'end
+'deactivate Android
+'
+Sender -> Android : 동의 요청
+
+activate Android
+Android -> Node.js : 수신자 동의요청 확인
+Node.js -> Receiver : 동의 요청 알림
+Receiver -> Node.js : 동의한다
+
+deactivate Android
+
+
+
+
+
+
+
+alt Order
+Sender -> Android : Request : Order
+activate Android
+
+Android ->Laravel: Request : Choose startPoint ArrivePoint
+
+
+Android ->Laravel: Request :수신자 핸드폰 번호
+
+
+
+Sender ->Android: Click 동의 요청
+Laravel -->Android: Response :수신자 동의 대기
+activate Laravel
+Laravel -> Receiver: Response 승인/거절 요청
+deactivate Laravel
+Receiver --> Laravel: Request 승인
+activate Laravel
+Laravel --> Android: Response :수신자 승인
+deactivate Laravel
+deactivate Android
+end
+
+alt QR코드 정보
+Laravel -> Node.js: Request : 주문정보(QR코드 정보)
+Node.js --> Laravel : Response : 주문정보(QR코드)
+Node.js --> Car: Response : 주문정보, 이동경로
+end
+
+alt Car arrive for Sender
+    alt QR코드 인식 O
+    Sender -> Android : Request QR코드
+    activate Android
+    Android -> Laravel:Request : Request :QR코드 정보
+    activate Laravel
+    Laravel-> Node.js : Response :차량 개방 여부
+    deactivate Laravel
+    activate Node.js
+    Node.js -> Car : Request : 차량 개방
+    deactivate Node.js
+    activate Car
+    Car -->Car: Response : Open Car
+    deactivate Car
+else QR코드 인식 X
+Android  -> Laravel : Request :QR코드 정보
+Laravel --> Android  : Response : 거절
+deactivate Android
+end
+
+alt 수신자 출발 요청 O
+    Sender -> Android:Request :차량 출발
+    activate Sender
+    activate Android
+    Android -> Laravel : Request : 차량 출발 요청
+    deactivate Android
+    activate Laravel
+    Laravel -> RDS : Request : Query 주문정보에 해당된 경로
+    activate RDS
+    RDS --> Laravel : Response : Query 주문정보에 해당된 경로
+    deactivate RDS
+    Laravel-> Node.js: Request :주문정보에 해당된 차량 출발
+    deactivate Laravel
+    activate Node.js
+    Node.js -> Car: Request :차량 출발
+    deactivate Node.js
+    activate Car
+    Car -->Car: Response : 출발
+    Car --> Node.js : Response : 출발
+    deactivate Car
+    activate Node.js
+    Node.js --> Laravel : Response : 출발
+    deactivate Node.js
+    activate Laravel
+    Laravel --> Android : Response : 출발
+    deactivate Laravel
+    activate Android
+    Android --> Sender : Response : 출발
+    deactivate Android
+deactivate Sender
+
+    else 수신자 출발 요청 X
+
+        Sender -> Laravel:Request :차량 출발 요청
+        activate Laravel
+        Laravel-> Node.js: Request :주문정보에 해당된 차량 출발
+        deactivate Laravel
+        activate Node.js
+        Node.js -> Car : Request : 개방 X
+        deactivate Node.js
+        end
+    end
+
+alt See Sender and Receiver 실시간 좌표
+Sender -> Android : Request 실시간 차량 위치
+activate Sender
+activate Android
+Android -> Node.js : Request 실시간 차량 위치
+deactivate Android
+activate Node.js
+Node.js -> Car : Response 실시간 차량 위치
+deactivate Node.js
+activate Car
+Car -> Node.js : Response 실시간 이동 좌표
+deactivate Car
+activate Node.js
+Node.js -> Laravel   : Response : Query 실시간 이동 좌표
+deactivate Node.js
+activate Laravel
+Laravel -> Android : Response : 실시간 차량 위치
+deactivate Laravel
+activate Android
+Android -> Sender : Response : 실시간 차량 위치
+deactivate Android
+deactivate Sender
+end
+
+
+
+
+
+
+alt Car arrive for Receiver
+
+
+ alt QR코드 인식 O
+    Receiver -> Android : Request QR코드
+    activate Receiver
+    activate Android
+    Android -> Laravel:Request : Request :QR코드 정보
+    activate Laravel
+    Laravel-> Node.js : Response :차량 개방 여부
+    deactivate Laravel
+    activate Node.js
+    Node.js -> Car : Request : 차량 개방
+    deactivate Node.js
+    activate Car
+    Car -->Car: Response : Open Car
+    deactivate Car
+else QR코드 인식 X
+Android  -> Laravel : Request :QR코드 정보
+Laravel --> Android  : Response : 거절
+deactivate Android
+deactivate Receiver
+end
+
+
+
+
+
+Receiver -> Android : Request 수신 완료
+activate Receiver
+activate Android
+Android -> Node.js : Request 수신 완료
+deactivate Android
+activate Node.js
+Node.js -> Car : Request 수신 완료
+deactivate Node.js
+activate Car
+Car --> Node.js : Response :수신자가 수신 완료
+deactivate Car
+activate Node.js
+Node.js --> Laravel :Response : 수신완료정보
+deactivate Node.js
+activate Laravel
+Laravel --> Sender : Response : 수신완료
+Laravel --> Receiver : Response : 수신완료
+deactivate Laravel
+deactivate Receiver
+
+end
+
+@endduml
+

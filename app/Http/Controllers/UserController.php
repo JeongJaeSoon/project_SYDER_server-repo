@@ -58,9 +58,9 @@ class UserController extends Controller
             ], 422);
         }
 
-        if (!($request->guard === 'admin')) {
+        if (!($request->guard === 'user')) {
             return response()->json([
-                'message' => 'This page is only accessible to admin',
+                'message' => 'This page is only accessible to user',
             ], 403);
         }
 
