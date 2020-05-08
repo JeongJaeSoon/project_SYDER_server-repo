@@ -5,292 +5,223 @@ footer Page %page% of %lastpage%
 
 actor Sender
 actor Receiver
-boundary Android
-boundary Car
 control Laravel
-boundary FCM
-control Node.js
 database RDS
+boundary FCM
+boundary Car
+control Node.js
 
 ==주문 전==
-Sender -> Android : 로그인
 
-activate Android
-Receiver -> Android : 로그인
+Receiver -> Laravel : 로그인
 
-Android -> Laravel : Request : ID, PW 입력, 웨이포인트 목록
-activate Laravel
+activate Sender
+    activate Laravel
+        Sender -> Laravel : 로그인
+        Sender -> Laravel : Request : ID, PW 입력, 웨이포인트 목록
+        Laravel -> RDS : Query : ID, PW 확인
 
-Laravel -> RDS : Query : ID, PW 확인
-activate Laravel
+        alt 로그인 실패
+            RDS --> Laravel : Query : 일치하는 ID, PW 가 없음
+            Laravel --> Sender : Response : 로그인 에러
 
-alt 로그인 실패
-RDS --> Laravel : Query : 일치하는 ID, PW 가 없음
-Laravel --> Android : Response : 로그인 에러
+        else 로그인 성공
+            RDS -> RDS : 액세스 토큰 발급
+            RDS --> Laravel : Query : 유저정보, 액세스 토큰, 웨이포인트 목록
+            Laravel -> FCM : Request : FCM 토큰
+            FCM --> Laravel : Response : FCM 토큰
+            Laravel --> Sender : Response : 유저정보, 액세스/FCM 토큰, 웨이포인트 목록
+        end
+    deactivate Laravel
 
-else 로그인 성공
+    Sender -> Laravel : Response : 등록된 주문 정보 조회(토큰)
 
-RDS -> RDS : 액세스 토큰 발급
+    activate Laravel
+        Laravel -> RDS : Query : 주문 목록 조회
 
-RDS --> Laravel : Query : 유저정보, 액세스 토큰
-Laravel -> FCM : Request : FCM 토큰
-FCM --> Laravel : Response : FCM 토큰
-Laravel --> Android : Response : 유저정보, 액세스/FCM 토큰
-deactivate Laravel
-end
+        alt 진행 중인 주문 존재
+            RDS -> Laravel : Query : 주문 정보 조회 결과
+            Laravel --> Sender : Response : 주문 정보 조회 결과
+    deactivate Laravel
+        end
 
-activate Laravel
-Laravel -> RDS : Query : 웨이포인트 목록 조회
-RDS --> Laravel : Query : 웨이포인트 조회 결과
-Laravel --> Android : Response : 웨이포인트 조회 결과
-deactivate Laravel
-
-Android -> Laravel : Response : 등록된 주문 정보 조회(토큰)
-activate Laravel
-
-Laravel -> RDS : Query : 주문 목록 조회
-
-alt 진행 중인 주문 존재
-RDS -> Laravel : Query : 주문 정보 조회 결과
-Laravel --> Android : Response : 주문 정보 조회 결과
-deactivate Laravel
-end
-
-note right
-등록된 주문이 존재할 경우,
-주문 요청 불가
-end note
-
-deactivate Android
+    note right
+        등록된 주문이 존재할 경우,
+        주문 요청 불가
+    end note
+deactivate Sender
 
 ==주문 시작==
 
-Sender -> Android : 출발, 도착지 입력
+Sender -> Laravel : Request : 출발~도착지 입력, 예상 소요시간 요청
 
-activate Android
-Android -> Laravel : Request : 출발~도착지 예상 소요시간 요청
-
-activate Laravel
-Laravel -> RDS : Query : 경로 정보 조회
-activate Laravel
-
-alt 출발~도착지 경로가 없을 경우
-RDS --> Laravel : Query : 경로 정보 없음
-Laravel --> Android : Response : 조회 거부
-deactivate Laravel
-
-else 출발~도착지 경로가 있을 경우
-RDS -> Laravel : Query : 예상 소요시간
-activate Laravel
-
-alt 가용 차량이 없을 경우
-Laravel -> RDS : Query : 대기 주문 건수 조회
-RDS --> Laravel : Query : 대기 주문 건수
-Laravel --> Android : Response : 대기 주문 건수, 예상 소요시간
-end
-
-RDS -> RDS : 차량 상태 운행 예약 변경
-note left
-운행 예약 상태에서 일정시간
-(운행 요청 미실시)초과 시, 운행 취소
-end note
-
-alt 가용 차량이 출발지에 있을 경우
-
-Laravel -> Android : Response : 주문 정보, 예상 소요시간
-
-else 가용 차량이 있지만, 출발지에 없을 경우
-Laravel -> RDS : Query : 차량 예상 도착 시간 조회
-RDS --> Laravel : Query : 차량 예상 도착 시간
-
-Laravel --> Android : Response : 주문 정보, 예상 소요시간, 예상 도착 시간
-deactivate Laravel
-deactivate Laravel
-
-end
-deactivate Android
-
-end
-
-Sender -> Android : 수신자 연락처 입력
-activate Android
-
-Android -> Laravel : Request : 수신자 정보 요청
-activate Laravel
-Laravel -> RDS : Query : 수신자 정보 조회
-
-alt 등록된 수신자가 없을 경우
-    RDS --> Laravel : Query : 등록된 수신자 없음
-    Laravel --> Android : Response : 수신자 정보 조회 거절
-else 등록된 수신자가 있을 경우
-    RDS --> Laravel : Response : 수신자 정보
-    Laravel -> FCM : Query : 수신자 FCM 토큰 조회
-    FCM --> Laravel : Query : 수신자 FCM 토큰
-    Laravel --> Android : Response : 수신자 정보 자동입력,\nFCM 토큰(주문 간 유지)
-deactivate Laravel
-end
-deactivate Android
-
-Sender -> Android : 동의 요청
-
-activate Android
-    Android -> Laravel : Request : 수신자 동의 요청(수신자 FCM 토큰)
+activate Sender
     activate Laravel
-    Laravel -> RDS : Query : 주문 정보 등록
-    Laravel -> Receiver : Alert : 수신자 동의 요청 전송
-    activate Receiver
+        Laravel -> RDS : Query : 경로 정보 조회
 
-alt 동의 요청 거절 시
-    Receiver --> Laravel : Reaction : 수신자 거절 메세지
-    Laravel --> Android : Response : 수신자 거절 메세지 전달
-    Laravel -> RDS : Query : 주문 정보 취소
-else 주문 동의 시
+        alt 출발~도착지 경로가 없을 경우
+            RDS --> Laravel : Query : 경로 정보 없음
+            Laravel --> Sender : Response : 조회 거부
+    deactivate Laravel
 
-Receiver --> Laravel : Reaction : 수신자 동의 메세지
-deactivate Receiver
-Laravel --> Android : Response : 수신자 동의 메세지 전달
+        else 출발~도착지 경로가 있을 경우
+            RDS --> Laravel : Query : 예상 소요시간
 
-Laravel -> RDS : Query : 주문 상태 최신화
-deactivate Laravel
+            activate Laravel
+                alt 가용 차량이 없을 경우
+                    Laravel -> RDS : Query : 대기 주문 건수 조회
+                    RDS --> Laravel : Query : 대기 주문 건수
+                    Laravel --> Sender : Response : 대기 주문 건수, 예상 소요시간
+                end
 
-Android -> Node.js : Request : 주문 시작 요청
-activate Node.js
+                RDS -> RDS : 차량 상태 운행 예약 변경
+                    note left
+                        운행 예약 상태에서 일정시간
+                        (운행 요청 미실시)초과 시, 운행 취소
+                    end note
+
+                alt 가용 차량이 출발지에 있을 경우
+                    Laravel -> Sender : Response : 주문 정보, 예상 소요시간
+
+                else 가용 차량이 있지만, 출발지에 없을 경우
+                    Laravel -> RDS : Query : 차량 예상 도착 시간 조회
+                    RDS --> Laravel : Query : 차량 예상 도착 시간
+                    Laravel --> Sender : Response : 주문 정보, 예상 소요시간, 예상 도착 시간
+                    end
+            deactivate Laravel
+        end
+
+    Sender -> Laravel : Request : 수신자 연락처 입력, 정보 요청
+    activate Laravel
+        Laravel -> RDS : Query : 수신자 정보 조회
+
+        alt 등록된 수신자가 없을 경우
+            RDS --> Laravel : Query : 등록된 수신자 없음
+            Laravel --> Sender : Response : 수신자 정보 조회 거절
+        else 등록된 수신자가 있을 경우
+            RDS --> Laravel : Response : 수신자 정보
+            Laravel -> FCM : Query : 수신자 FCM 토큰 조회
+            FCM --> Laravel : Query : 수신자 FCM 토큰
+            Laravel --> Sender : Response : 수신자 정보 자동입력,\nFCM 토큰(주문 간 유지)
+        end
+    deactivate Laravel
+deactivate Sender
+
+Sender -> Laravel : Request : 수신자 동의 요청(수신자 FCM 토큰)
+activate Sender
+    activate Laravel
+        Laravel -> RDS : Query : 주문 정보 등록
+        Laravel -> Receiver : Alert : 수신자 동의 요청 전송
+
+
+        alt 동의 요청 거절 시
+            activate Receiver
+                Receiver --> Laravel : Reaction : 수신자 거절 메세지
+                Laravel --> Sender : Response : 수신자 거절 메세지 전달
+                Laravel -> RDS : Query : 주문 정보 취소
+        else 주문 동의 시
+            Receiver --> Laravel : Reaction : 수신자 동의 메세지
+            deactivate Receiver
+
+        Laravel --> Sender : Response : 수신자 동의 메세지 전달
+        Laravel -> RDS : Query : 주문 상태 최신화
+    deactivate Laravel
 end
 
-alt 가용 차량이 있지만, 출발지에 없을 경우
+Sender -> Node.js : Request : 주문 시작 요청
 
-Node.js -> Car : Request : 출발지로 차량 출발 명령 전송
-Car -> Car : 출발지로 차량 이동
-Car --> Node.js : Response : 출발지에 차량 도착 완료
-end
+    activate Node.js
+        alt 가용 차량이 있지만, 출발지에 없을 경우
+            Node.js -> Car : Request : 출발지로 차량 출발 명령 전송
+            Car -> Car : 출발지로 차량 이동
+            Car --> Node.js : Response : 출발지에 차량 도착 완료
+        end
 
-Node.js --> Android : Response : 출발지 차량 도착 완료
-deactivate Node.js
-deactivate Android
+        Node.js --> FCM : 출발지 차량 도착 전송
+    deactivate Node.js
+    FCM -> Sender : Response : 출발지 차량 도착 완료
+
+deactivate Sender
 
 newpage
 
 ==차량 출발==
 
 Sender <--> Car : QR코드 확인
-Sender -> Android : QR코드 인증
-activate Android
-Android -> Laravel : Request : QR코드 인증을 통한 주문 정보 확인 요청
+activate Sender
+Sender -> Laravel : Request : QR코드 인증을 통한 주문 정보 확인 요청
 activate Laravel
 Laravel -> RDS : Query : 주문 정보 조회
 alt 등록된 주문 정보 없을 경우
 RDS --> Laravel : Query : 등록된 주문 정보 없음
-Laravel --> Android : Response : 정보 확인 거절
-end
+Laravel --> Sender : Response : 정보 확인 거절
+else 등록된 주문 정보 있을 경우
 RDS --> Laravel : Query : 주문 정보
-Laravel --> Android : Response : 주문 정보 전송
+Laravel --> Sender : Response : 주문 정보 전송
 deactivate Laravel
 
-Android -> Node.js : Request : 차량 개방 요청
+Sender -> Node.js : Request : 차량 개방 요청
 activate Node.js
 Node.js --> Car : Alert : 차량 개방 요청 전송
 activate Car
-    Car -> Car : 차량 개방
-    activate Car
-    Sender <--> Car : 차량에 물건 적재
-    deactivate Car
-    Android -> Node.js : Request : 차량 출발 요청
-deactivate Android
+Car -> Car : 차량 개방
+activate Car
+Sender <--> Car : 차량에 물건 적재
+deactivate Car
+Sender -> Node.js : Request : 차량 출발 요청
+deactivate Sender
 
 Node.js --> Car : Alert : 차량 출발 명령 전송
 Car -> Node.js : Reaction : 차량 출발
 deactivate Car
 
 Node.js --> Receiver : Alert : 차량 출발 전달
-Node.js -> RDS : Query : 주문 정보 최신화
 deactivate Node.js
-
-==차량 이동==
-alt See Sender and Receiver 실시간 좌표
-Sender -> Android : Request 실시간 차량 위치
-activate Sender
-activate Android
-Android -> Node.js : Request 실시간 차량 위치
-deactivate Android
-activate Node.js
-Node.js -> Car : Response 실시간 차량 위치
-deactivate Node.js
-activate Car
-Car -> Node.js : Response 실시간 이동 좌표
-deactivate Car
-activate Node.js
-Node.js -> Android   : Response : Query 실시간 이동 좌표
-deactivate Node.js
-activate Android
-Android -> Sender : Response : 실시간 차량 위치
-deactivate Android
-deactivate Sender
 end
+==차량 이동==
+Car -> Node.js : Response 실시간 이동 좌표
+Node.js -> Receiver   : Response : 실시간 이동 좌표
+Node.js -> Sender : Response : 실시간 이동 좌표
 
 ==차량 도착==
 alt Car arrive for Receiver
 
 Car --> Node.js : Response : 차량 도착
-activate Car
 activate Node.js
-Node.js -> Android: Response : 차량 도착
-deactivate Node.js
-activate Android
-Android -> Sender : Response : 차량 도착 알림
-activate Android
-Android -> Receiver : Response : 차량 도착 알림
-deactivate Android
-deactivate Car
+Node.js -> FCM : 차량 도착 전달
+FCM --> Receiver: 차량 도착 전달
 
 
- alt QR코드 인식 O
-    Receiver -> Android : Request QR코드
-    activate Android
-    Android -> Laravel:Request : Request :QR코드 정보
-    activate Laravel
-    Laravel-> Node.js : Response :차량 개방 여부
-    deactivate Laravel
-    activate Node.js
-    Node.js -> Car : Request : 차량 개방
-    deactivate Node.js
-    activate Car
-    Car -->Car: Response : Open Car
-    Car --> Node.js : Response : 차량 도착 완료
-    deactivate Car
-
-else QR코드 인식 X
-Android  -> Laravel : Request :QR코드 정보
-Laravel --> Android  : Response : 거절
-deactivate Android
-end
-
-
-
-
-
-Receiver -> Android : Request : 수신 완료
+Receiver <--> Car : QR코드 확인
 activate Receiver
-activate Android
-Android -> Node.js : Request 수신 완료
-deactivate Android
-activate Node.js
-Node.js -> Car : Request 수신 완료
-deactivate Node.js
-activate Car
-Car --> Node.js : Response :수신자가 수신 완료
-deactivate Car
-activate Node.js
-Node.js --> Laravel :Response : 수신완료정보
-deactivate Node.js
+Receiver -> Laravel:Request : Request :QR코드 인증을 통한 주문 정보 확인 요청
 activate Laravel
-Laravel --> Sender : Response : 수신완료
-Laravel --> Receiver : Response : 수신완료
+Laravel-> RDS : Query 주문 정보 조회
+alt 등록된 주문 정보 없을 경우
+RDS --> Laravel : Query 등록된 정보 없음
+Laravel -> Receiver : 정보 확인 거절
+end
+RDS --> Laravel : Query 주문 정보
+Laravel -> Receiver : Response 주문 정보 전송
 deactivate Laravel
+
+Receiver -> Node.js : Request : 차량 개방 요청
 deactivate Receiver
 
+Node.js -> Car : Alert : 차량 개방 요청 전송
+activate Car
+Car -->Car: 차량 개방
+activate Car
+Receiver --> Car : 차량에 적재된 물건 수령
+deactivate Car
+Receiver -> Node.js : Request : 수령 완료
+Node.js --> FCM : 수령 완료 전달
+FCM --> Receiver : Alert : 수령 완료
+Node.js --> FCM : 수령 완료 전달
+FCM --> Sender : Alert : 수령 완료
+Node.js -> RDS : 주문 종료 최신화
+deactivate Node.js
+deactivate Car
 end
 
-
-
 @endduml
-
