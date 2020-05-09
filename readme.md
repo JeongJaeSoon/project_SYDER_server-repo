@@ -102,3 +102,11 @@
     - admin : Waypoint Register, Update, Delete, Order Index
     - user : Order Check, Show, Register, User Request
     - admin & user : Waypoint Index, Logout, AuthCheck
+        
+### [2020.05.04 ~ 2020.05.09]
+- Creating sequence diagrams
+
+<p>
+<img src="https://github.com/JeongJaeSoon/SYDER/blob/master/Sequence_diagram_02.png?raw=true" width="50%">
+<img src="https://github.com/JeongJaeSoon/SYDER/blob/master/Sequence_diagram_02.png?raw=true" width="50%">
+</p>

@@ -158,7 +158,7 @@ Car -> Car : 차량 개방
 activate Car
 Sender <--> Car : 차량에 물건 적재
 deactivate Car
-Sender -> Node.js : Request : 차량 출발 요청
+Sender -> Node.js : Request : 차량 출발 요청ㄱㄷ
 deactivate Sender
 
 Node.js --> Car : Alert : 차량 출발 명령 전송
