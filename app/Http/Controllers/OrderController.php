@@ -164,7 +164,6 @@ class OrderController extends Controller
         // [CHECK VALIDATION]
         $validator = Validator::make($request->all(), [
             'startingId' => 'required|numeric',
-            'arrivalId' => 'required|numeric',
             'guard' => 'required|string',
         ]);
 
@@ -187,93 +186,61 @@ class OrderController extends Controller
             ], 401);
         }   // [Client Errors]
 
-        // [SET] Variable
-        $startingId = $request->startingId;
-        $arrivalId = $request->arrivalId;
-        $routeInfo = null;
-
-        // [QUERY] Registered route search
-        for ($routeCount = 0; $routeCount < 2; $routeCount++) {
-            $routeInfo = Route::select('id', 'travel_time')
-                ->where('starting_point', $startingId)
-                ->where('arrival_point', $arrivalId)
-                ->get()->first();
-
-            if ($routeInfo == null) {
-                $tmpID = $startingId;
-                $startingId = $arrivalId;
-                $arrivalId = $tmpID;
-            } else  break;
-        }
-
-        // [IF] There is no registered route => RETURN
-        if ($routeInfo == null) {
-            return response()->json([
-                'message' => 'There is no available routes'
-            ], 200);
-        }   // [QUERY END]
-
-        // [QUERY] Check cart existed at the starting point
-        $cartId = Cart::select('id')
+        // Check for available carts
+        $remainCarts = Cart::select('id', 'status', 'cart_location')
             ->where('status', 0)
-            ->where('cart_location', $request->startingId)
-            ->get()->first();
-
-        // [IF] There is a cart at the starting point => RETURN
-        if ($cartId != null) {
-            // TODO : 일정 시간 초과 후 운행 상태 1 지속 시, 0으로 초기화
-            $cartId->update(['status' => 1]);
-            return response()->json([
-                'message' => 'There is a cart at the starting point',
-                'expected_arrivalTime' => 0,
-                'travel_time' => $routeInfo->travel_time,
-                'order_cart' => $cartId->id,
-                'order_route' => $routeInfo->id,
-                'cartMove_needs' => false,
-                'cartMove_routeId' => null,
-            ], 200);
-        }   // [QUERY END]
-
-
-        // [QUERY] Find cart at nearby waypoint
-        $closePathsFirst = Route::select('id', 'arrival_point', 'travel_time')
-            ->where('starting_point', $request->startingId);
-        $closePaths = Route::select('id', 'starting_point as waypoint', 'travel_time')
-            ->where('arrival_point', $request->startingId)
-            ->union($closePathsFirst)
-            ->orderBy('travel_time')
             ->get();
 
-        for ($pathCount = 0; $pathCount < $closePaths->count(); $pathCount++) {
-            $nearWaypoint = $closePaths[$pathCount];
-            $cartId = Cart::select('id')
-                ->where('status', 0)
-                ->where('cart_location', $nearWaypoint->waypoint)
-                ->get()->first();
+        // [IF] There is no available cart => RETURN
+        if (!$remainCarts->count()) {
+            $remainOrders = Order::where('status', 9)->get()->count();
 
-            if ($cartId == null) continue;
+            return response()->json([
+                'message' => 'There is no available cart',
+                'remain_order' => $remainOrders,
+            ], 200);
+        }
 
-            // [IF] There is a cart near the starting point => RETURN
-            if ($cartId != null) {
-                // TODO : 일정 시간 초과 후 운행 상태 1 지속 시, 0으로 초기화
-                $cartId->update(['status' => 1]);
+        // [IF] Cart is at the starting Point
+        foreach ($remainCarts as $cart) {
+            $cart_location = $cart->cart_location;
+
+            if ($cart_location == $request->startingId) {
+                $cart->update(['status' => 1]);
+
                 return response()->json([
-                    'message' => 'Cart moves to the starting point',
-                    'expected_arrivalTime' => $nearWaypoint->travel_time,
-                    'travel_time' => $routeInfo->travel_time,
-                    'order_cart' => $cartId->id,
-                    'order_route' => $routeInfo->id,
-                    'cartMove_needs' => true,
-                    'cartMove_routeId' => $nearWaypoint->id,
+                    'message' => 'Cart is ready for start',
+                    'cart_id' => $cart->id,
+                    'cartMove_needs' => false,
                 ], 200);
             }
         }
 
-        $waiting_order = Order::where('order_status', 9)->get()->count();
+        // [QUERY] Find cart at nearby waypoint
+        $closeRoutesFirst = Route::select('id', 'arrival_point', 'travel_time')
+            ->where('starting_point', $request->startingId);
+        $closeRoutes = Route::select('id', 'starting_point as waypoint', 'travel_time')
+            ->where('arrival_point', $request->startingId)
+            ->union($closeRoutesFirst)
+            ->orderBy('travel_time')
+            ->get();
 
-        return response()->json([
-            'message' => 'There is no cart that can move',
-            'waiting_orderNum' => $waiting_order,
-        ], 200);
+        foreach ($closeRoutes as $route) {
+            foreach ($remainCarts as $cart) {
+
+                // [IF] Cart is at the nearby starting waypoint
+                if ($cart->cart_location == $route->waypoint) {
+                    $cart->update(['status' => 1]);
+
+                    return response()->json([
+                        'message'=> 'Cart is need to move',
+                        'cart_id'=>$cart->id,
+                        'cartMove_needs'=>true,
+                        'cartMove_route' => $route->id,
+                        'cartMove_time' => $route->travel_time,
+                    ], 200);
+                }
+            }
+        }
     }
 }

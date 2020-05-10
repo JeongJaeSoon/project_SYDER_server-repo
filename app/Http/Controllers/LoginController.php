@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Model\Authenticator;
+use App\Route;
+use App\Waypoint;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;

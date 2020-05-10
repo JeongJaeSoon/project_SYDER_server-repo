@@ -107,6 +107,6 @@
 - Creating sequence diagrams
 
 <p>
-<img src="https://github.com/JeongJaeSoon/SYDER/blob/master/Sequence_diagram_02.png?raw=true" width="50%">
+<img src="https://github.com/JeongJaeSoon/SYDER/blob/master/Sequence_diagram_01.png?raw=true" width="50%">
 <img src="https://github.com/JeongJaeSoon/SYDER/blob/master/Sequence_diagram_02.png?raw=true" width="50%">
 </p>

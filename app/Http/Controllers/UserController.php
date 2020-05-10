@@ -70,7 +70,8 @@ class UserController extends Controller
             ], 401);
         }   // [Client Errors]
 
-        $result = User::select('id', 'name')->where('phone', $request->phone)->get();
+        $result = User::select('id', 'name')->where('phone', $request->phone)->get()->first();
+
         return response()->json([
             'receiver' => $result
         ], 200);
