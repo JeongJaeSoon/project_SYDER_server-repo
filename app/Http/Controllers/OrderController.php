@@ -49,7 +49,6 @@ class OrderController extends Controller
     {
         // [CHECK VALIDATION]
         $validator = Validator::make($request->all(), [
-//            'sender' => 'required|numeric',
             'receiver' => 'required|numeric',
             'order_cart' => 'required|numeric',
             'order_route' => 'required|numeric',
@@ -67,7 +66,7 @@ class OrderController extends Controller
         // [IF] Cart need to move to the starting point
         if ((bool)$request->cartMove_needs) {
             $validator = Validator::make($request->all(), [
-                'cartMove_routeId' => 'required|numeric',
+                'cartMove_route' => 'required|numeric',
             ]);
 
             if ($validator->fails()) {
@@ -77,7 +76,6 @@ class OrderController extends Controller
             }
 
             // TODO : 수신자에게 동의여부를 확인
-            // TODO : 동의 시, node.js 를 통해 출발지로 차량이동 명령 전달
         }
 
         if (!($request->guard === 'user')) {
@@ -96,8 +94,7 @@ class OrderController extends Controller
 
         // [QUERY] Register order
         $order = Order::create([
-            'order_status' => 0,
-//            'sender' => $request->sender,
+            'status' => 100,
             'sender' => $sender->id,
             'receiver' => $request->receiver,
             'order_cart' => $request->order_cart,
@@ -193,7 +190,7 @@ class OrderController extends Controller
 
         // [IF] There is no available cart => RETURN
         if (!$remainCarts->count()) {
-            $remainOrders = Order::where('status', 9)->get()->count();
+            $remainOrders = Order::where('status', 900)->get()->count();
 
             return response()->json([
                 'message' => 'There is no available cart',
@@ -233,14 +230,117 @@ class OrderController extends Controller
                     $cart->update(['status' => 1]);
 
                     return response()->json([
-                        'message'=> 'Cart is need to move',
-                        'cart_id'=>$cart->id,
-                        'cartMove_needs'=>true,
+                        'message' => 'Cart is need to move',
+                        'cart_id' => $cart->id,
+                        'cartMove_needs' => true,
                         'cartMove_route' => $route->id,
                         'cartMove_time' => $route->travel_time,
                     ], 200);
                 }
             }
         }
+    }
+
+    // API : [PATCH] /api/orders/{order}
+    public function orderConsentUpdate(Request $request, Order $order)
+    {
+        // [CHECK VALIDATION]
+        $validator = Validator::make($request->all(), [
+            'consent' => 'required|boolean',
+            'guard' => 'required|string',
+        ]);
+
+        // [Client Errors]
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors(),
+            ], 422);
+        }
+
+        if (!($request->guard === 'user')) {
+            return response()->json([
+                'message' => 'This page is only accessible to user',
+            ], 403);
+        }
+
+        if (!Auth::guard($request->guard)->check()) {
+            return response()->json([
+                'message' => 'Access Denied'
+            ], 401);
+        }   // [Client Errors]
+
+        $message = $request->consent ? $message = "User consent is registered" : $message = "User reject is registered";
+
+        if ($request->consent) {
+            $order->update(['status' => 101]);
+        } else {
+            $order->update(['status' => 102]);
+        }
+
+        $updated = Order::find($order->id);
+
+        return response()->json([
+            'message' => $message,
+            'order' => $updated,
+        ], 200);
+    }
+
+    public function orderAuthentication(Request $request, Cart $cart)
+    {
+        $validator = Validator::make($request->all(), [
+            'orderId' => 'required|numeric',
+            'userId' => 'required|numeric',
+            'userCategory' => 'required|string',
+            'guard' => 'required|string',
+        ]);
+
+        // [Client Errors]
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors(),
+            ], 422);
+        }
+
+        if (!($request->guard === 'user')) {
+            return response()->json([
+                'message' => 'This page is only accessible to user',
+            ], 403);
+        }
+
+        if (!Auth::guard($request->guard)->check()) {
+            return response()->json([
+                'message' => 'Access Denied'
+            ], 401);
+        }   // [Client Errors]
+
+        $sender = $receiver = $status = '';
+
+        if ($request->userCategory === 'sender') {
+            $sender = $request->user($request->guard)->id;
+            $receiver = $request->userId;
+            $status = 200;
+        } else if ($request->userCategory === 'receiver') {
+            $sender = $request->userId;
+            $receiver = $request->user($request->guard)->id;
+            $status = 201;
+        }
+
+        $order = Order::where('status', $status)
+            ->where('sender', $sender)->where('receiver', $receiver)
+            ->where('id', $request->orderId)->where('order_cart', $cart->id)
+            ->get()->first();
+
+        if ($order == null)
+            return response()->json([
+                'message' => 'This is an invalid order',
+                'result' => false
+            ], 404);
+
+        return response()->json([
+            'message' => 'This is a valid order',
+            'result' => true
+        ], 200);
+
+
     }
 }

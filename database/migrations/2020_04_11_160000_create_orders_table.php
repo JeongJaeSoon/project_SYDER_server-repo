@@ -15,9 +15,11 @@ class CreateOrdersTable extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->bigIncrements('id');
-            // 0 : 배정완료(물건 적재 이전), 1 : 이동 중(물건 적재 이후),
-            // 2 : 도착완료(물건 하역 이전), 3 : 운행 완료(물건 하역 이후)
-            // 9 : 배정대기(차량 부족으로 인한, 주문 대기)
+            // 정차 상태 => 100 : 배정 완료                 101 : 수신자 동의                 102 : 수신자 거절
+            // 대기 상태 => 200 : 출발지 대기 중            201 : 도착지 대기 중
+            // 이동 상태 => 300 : 도착지로 차량 이동 중     301 : 출발지로 차량 이동 중
+            // 주문 상태 => 400 : 주문 종료                 401 : 주문 취소
+            // 기타 상태 => 900 : 차량 배정 대기
             $table->smallInteger('status');
             $table->unsignedBigInteger('sender');
             $table->foreign('sender')->references('id')->on('users');

@@ -34,15 +34,17 @@ Route::prefix('register')->group(function () {
 Route::prefix('waypoints')->group(function () {
     Route::get('/', 'WaypointController@waypointIndex');
     Route::post('/', 'WaypointController@waypointStore');
-    Route::patch('/{waypoint}', 'WaypointController@waypointUpdate');
-    Route::delete('/{waypoint}', 'WaypointController@waypointDestroy');
+    Route::patch('{waypoint}', 'WaypointController@waypointUpdate');
+    Route::delete('{waypoint}', 'WaypointController@waypointDestroy');
 });
 
-Route::prefix('order')->group(function () {
+Route::prefix('orders')->group(function () {
     Route::get('/', 'OrderController@orderIndex');
     Route::post('/', 'OrderController@orderRegister');
     Route::get('check', 'OrderController@orderCheck');
     Route::get('show', 'OrderController@orderShow');
+    Route::patch('{order}', 'OrderController@orderConsentUpdate');
+    Route::get('{cart}/orderAuth', 'OrderController@orderAuthentication');
 });
 
 Route::get('user/request', 'UserController@receiverSearch');

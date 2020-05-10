@@ -73,7 +73,7 @@ class UserController extends Controller
         $result = User::select('id', 'name')->where('phone', $request->phone)->get()->first();
 
         return response()->json([
-            'receiver' => $result
+            'receiver' => $result,
         ], 200);
     }
 }

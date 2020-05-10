@@ -103,10 +103,30 @@
     - user : Order Check, Show, Register, User Request
     - admin & user : Waypoint Index, Logout, AuthCheck
         
-### [2020.05.04 ~ 2020.05.09]
+### [2020.05.04 ~ 2020.05.10]
 - Creating sequence diagrams
 
 <p>
 <img src="https://github.com/JeongJaeSoon/SYDER/blob/master/Sequence_diagram_01.png?raw=true" width="50%">
 <img src="https://github.com/JeongJaeSoon/SYDER/blob/master/Sequence_diagram_02.png?raw=true" width="50%">
 </p>
+
+- OrderShow feedback reflected
+######
+    - After login, the server returns userInfo & waypoints & routes
+    - Modify vehicle assignment algorithm
+    
+- Order Request API development 
+#####
+    - Order Consent Update : Update order status based on user consent
+    - Order Authentication : When the user proceeds with 'QR code authentication', check if it is a valid order
+
+- Classification of detailed order status
+#####
+    - The cart is stopping  | 100 : Assignment completed / 101 : Receiver consent / 102 : Receiver reject
+    - The cart is waiting   | 200 : Wating at starting point / 201 : Waiting at arrival point
+    - The cart is moving    | 300 : Moving to arrival point / 301 : Moving to starting point
+    - Order status          | 400 : Order end / 401 : Order cancel
+    - Etc                   | 900 : Waiting for cart assignment
+
+
