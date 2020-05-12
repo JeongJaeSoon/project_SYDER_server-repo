@@ -72,6 +72,12 @@ class UserController extends Controller
 
         $result = User::select('id', 'name')->where('phone', $request->phone)->get()->first();
 
+        if ($result == null) {
+            return response()->json([
+                'message' => 'Receiver not found',
+            ], 404);
+        }
+
         return response()->json([
             'receiver' => $result,
         ], 200);
