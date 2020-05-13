@@ -138,7 +138,7 @@ class OrderController extends Controller
         $userId = $request->user($request->guard)->id;
 
         $order = Order::where('sender', $userId)
-            ->where('order_status', '<>', '3')
+            ->where('status', '<>', '3')
             ->get();
 
         if ($order->count() >= 1) {
