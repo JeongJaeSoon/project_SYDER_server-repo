@@ -48,3 +48,4 @@ Route::prefix('orders')->group(function () {
 });
 
 Route::get('user/request', 'UserController@receiverSearch');
+Route::post('user/devices', 'DeviceController@upsert');

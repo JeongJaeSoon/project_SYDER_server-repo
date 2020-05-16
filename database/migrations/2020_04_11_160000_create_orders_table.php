@@ -22,18 +22,19 @@ class CreateOrdersTable extends Migration
             // 기타 상태 => 900 : 차량 배정 대기
             $table->smallInteger('status');
             $table->unsignedBigInteger('sender');
-            $table->foreign('sender')->references('id')->on('users');
             $table->unsignedBigInteger('receiver');
-            $table->foreign('receiver')->references('id')->on('users');
             $table->unsignedBigInteger('order_cart');
-            $table->foreign('order_cart')->references('id')->on('carts');
             $table->unsignedBigInteger('order_route');
-            $table->foreign('order_route')->references('id')->on('routes');
             $table->timestamp('request_time');
             $table->timestamp('approved_time')->nullable();
             $table->timestamp('depart_time')->nullable();
             $table->timestamp('arrival_time')->nullable();
             $table->timestamps();
+
+            $table->foreign('sender')->references('id')->on('users');
+            $table->foreign('receiver')->references('id')->on('users');
+            $table->foreign('order_cart')->references('id')->on('carts');
+            $table->foreign('order_route')->references('id')->on('routes');
         });
     }
 

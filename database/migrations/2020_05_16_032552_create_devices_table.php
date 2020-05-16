@@ -15,11 +15,15 @@ class CreateDevicesTable extends Migration
     {
         Schema::create('devices', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->integer('user_id')->unsigned()->index();
-            $table->foreign('sender')->references('id')->on('users')->onDelete('cascade');
+            $table->unsignedBigInteger('user_id');
             $table->string('device_id')->nullable();
             $table->string('push_service_id')->nullable();
             $table->timestamps();
+
+            $table->foreign('user_id')
+                ->references('id')
+                ->on('users')
+                ->onDelete('cascade');
         });
     }
 
@@ -30,6 +34,12 @@ class CreateDevicesTable extends Migration
      */
     public function down()
     {
+        Schema::table('devices', function (Blueprint $table){
+            // 외래키 관계를 선언했다면, 리버스 마이그레이션 할 때 에러를 피하기 위해
+            // 테이블을 삭제하기 전에 외래키를 먼저 삭제하는 것이 중요
+            $table->dropForeign('devices_user_id_foreign');
+        });
+
         Schema::dropIfExists('devices');
     }
 }
