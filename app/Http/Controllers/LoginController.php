@@ -69,9 +69,12 @@ class LoginController extends Controller
         }
 
         $token = $user->createToken(ucfirst($credentials[2]) . ' Token')->accessToken;
-        $user->update([
-            'fcm_token' => $request->fcm_token,
-        ]);
+
+        if ($user->fcm_token != $request->fcm_token) {
+            $user->update([
+                'fcm_token' => $request->fcm_token,
+            ]);
+        }
 
         return response()->json([
             'message' => ucfirst($credentials[2]) . ' Login Success',
