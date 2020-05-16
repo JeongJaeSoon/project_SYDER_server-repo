@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
+use phpDocumentor\Reflection\DocBlock\Tags\Reference\Url;
 
 class LoginController extends Controller
 {
@@ -41,9 +42,21 @@ class LoginController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'message' => $validator->errors()
+            return \response()->json([
+                'message' => $validator->errors(),
             ], 422);
+        }
+
+        if ($request->provider === 'users') {
+            $validator = Validator::make($request->all(), [
+                'fcm_token' => 'required|string',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => $validator->errors()
+                ], 422);
+            }
         }
 
         $credentials = array_values($request->only('account', 'password', 'provider'));
@@ -56,6 +69,9 @@ class LoginController extends Controller
         }
 
         $token = $user->createToken(ucfirst($credentials[2]) . ' Token')->accessToken;
+        $user->update([
+            'fcm_token' => $request->fcm_token,
+        ]);
 
         return response()->json([
             'message' => ucfirst($credentials[2]) . ' Login Success',

@@ -16,7 +16,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $fillable = [
-        'account', 'password', 'name', 'gender', 'birthday', 'email', 'phone'
+        'account', 'password', 'name', 'email', 'phone', 'fcm_token'
     ];
 
     /**
@@ -27,9 +27,4 @@ class User extends Authenticatable
     protected $hidden = [
         'password', 'remember_token',
     ];
-
-    public function devices()
-    {
-        return $this->hasOne(Device::class);
-    }
 }
