@@ -106,7 +106,7 @@ class OrderController extends Controller
 
         return response()->json([
             'message' => 'Order Registration Success',
-            'waypoint' => $order,
+            'order' => $order,
         ], 201);
     }
 
@@ -141,7 +141,7 @@ class OrderController extends Controller
 
         $order = Order::where('sender', $userId)
             ->where('status', '<>', '3')
-            ->get();
+            ->get()->first();
 
         if ($order->count() >= 1) {
             return response()->json([
