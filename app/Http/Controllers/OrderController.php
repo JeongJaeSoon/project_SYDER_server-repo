@@ -52,6 +52,7 @@ class OrderController extends Controller
             'receiver' => 'required|numeric',
             'order_cart' => 'required|numeric',
             'order_route' => 'required|numeric',
+            'reverse_direction' => 'required|boolean',
             'cartMove_needs' => 'required|boolean',
             'guard' => 'required|string',
         ]);
@@ -99,6 +100,7 @@ class OrderController extends Controller
             'receiver' => $request->receiver,
             'order_cart' => $request->order_cart,
             'order_route' => $request->order_route,
+            'reverse_direction' => (boolean)$request->reverse_direction,
             'request_time' => now(),
         ]);
 
@@ -185,7 +187,7 @@ class OrderController extends Controller
 
         // Check for available carts
         $remainCarts = Cart::select('id', 'status', 'cart_location')
-            ->where('status', 0)
+            ->where('status', 110)
             ->get();
 
         // [IF] There is no available cart => RETURN
@@ -203,7 +205,7 @@ class OrderController extends Controller
             $cart_location = $cart->cart_location;
 
             if ($cart_location == $request->startingId) {
-                $cart->update(['status' => 1]);
+                $cart->update(['status' => 111]);
 
                 return response()->json([
                     'message' => 'Cart is ready for start',
@@ -227,7 +229,7 @@ class OrderController extends Controller
 
                 // [IF] Cart is at the nearby starting waypoint
                 if ($cart->cart_location == $route->waypoint) {
-                    $cart->update(['status' => 1]);
+                    $cart->update(['status' => 111]);
 
                     return response()->json([
                         'message' => 'Cart is need to move',

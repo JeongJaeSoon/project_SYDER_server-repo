@@ -15,10 +15,11 @@ class CreateCartsTable extends Migration
     {
         Schema::create('carts', function (Blueprint $table) {
             $table->bigIncrements('id');
-            // 0 : 운행 대기,       1 : 운행 예약
-            // 2 : 운행 준비 중,    3 : 운행 중
-            // 4 : 이상 차량,       5 : 정비 중
-            $table->tinyInteger('status');
+            // 110 : 미배정 차량                 111 : 운행 예약
+            // 210 : 출발지 대기 중              211 : 도착지 대기 중
+            // 310 : 도착지로 차량 이동 중       311 : 출발지로 차량 이동 중
+            // 910 : 차량 이상 발생
+            $table->smallInteger('status');
             $table->unsignedBigInteger('cart_location');
             $table->foreign('cart_location')->references('id')->on('waypoints');
             $table->timestamps();
