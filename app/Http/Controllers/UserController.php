@@ -72,6 +72,8 @@ class UserController extends Controller
 
         $result = User::select('id', 'name')->where('phone', $request->phone)->get()->first();
 
+        $result->name = iconv_substr($result->name, 0, 1, 'UTF-8').'*'.iconv_substr($result->name, 2,2,'UTF-8');
+
         if ($result == null) {
             return response()->json([
                 'message' => 'Receiver not found',
