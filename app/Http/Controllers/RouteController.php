@@ -35,7 +35,7 @@ class RouteController extends Controller
             ], 401);
         }   // [Client Errors]
 
-        $routes =  Route::get();
+        $routes = Route::get();
         return response()->json([
             'message' => 'Routes Indexing Success',
             'routes' => $routes
