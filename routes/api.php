@@ -49,4 +49,6 @@ Route::prefix('orders')->group(function () {
     Route::get('/consent', 'FcmController@consentRequest');
 });
 
+Route::get('routes', 'RouteController@routeIndex');
+
 Route::get('user/request', 'UserController@receiverSearch');
