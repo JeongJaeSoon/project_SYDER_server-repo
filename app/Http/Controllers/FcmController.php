@@ -132,21 +132,22 @@ class FcmController extends Controller
 
         $receiver = $request->user($request->guard);
 
-        $orderInfo = Order::select('users.name', 'users.fcm_token')
+        $orderInfo = Order::select('users.name', 'users.fcm_token', 'orders.status')
             ->where('orders.id', $request->order_id)
             ->where('orders.receiver', $receiver->id)
             ->join('users', 'orders.sender', 'users.id')
             ->get()->first();
+        $order = Order::where('id', $request->order_id);
 
         $message_title = $orderInfo->name . '님께 요청 결과가 도착했습니다.';
         $message_body = $receiver->name . '님께서 주문 요청을 ';
 
         if ((boolean)$request->consent_or_not) {
             $message_body .= '동의하셨습니다.';
-            $orderInfo->update('status', 101);
+            $order->update(['status' => 101]);
         } else {
             $message_body .= '거절하셨습니다.';
-            $orderInfo->update('status', 102);
+            $order->update(['status' => 102]);
         }
 
         $optionBuilder = new OptionsBuilder();
@@ -185,6 +186,7 @@ class FcmController extends Controller
 
         return response()->json([
             'message' => 'Consent Request Success',
+            'receiver_token' => $receiver->fcm_token,
         ]);
 
     }

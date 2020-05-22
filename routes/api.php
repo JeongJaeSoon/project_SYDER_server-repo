@@ -52,6 +52,11 @@ Route::prefix('consent')->group(function () {
     Route::get('response', 'FcmController@consentResponse');
 });
 
+Route::prefix('routes')->group(function () {
+    Route::get('/', 'RouteController@routeIndex');
+    Route::post('/', 'RouteController@routeStore');
+    Route::delete('{route}', 'RouteController@routeDestroy');
+});
 Route::get('routes', 'RouteController@routeIndex');
 
 Route::get('user/request', 'UserController@receiverSearch');
