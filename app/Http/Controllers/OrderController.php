@@ -334,7 +334,7 @@ class OrderController extends Controller
             $cart->update(['status' => 110]);
         else
             $cart->update(['status' => $cart_status]);
-        
+
         return response()->json([
             'message' => 'Status Update Success'
         ]);
