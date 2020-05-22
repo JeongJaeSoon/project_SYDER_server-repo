@@ -243,50 +243,6 @@ class OrderController extends Controller
         }
     }
 
-    // API : [PATCH] /api/orders/{order}
-    public function orderConsentUpdate(Request $request, Order $order)
-    {
-        // [CHECK VALIDATION]
-        $validator = Validator::make($request->all(), [
-            'consent' => 'required|boolean',
-            'guard' => 'required|string',
-        ]);
-
-        // [Client Errors]
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => $validator->errors(),
-            ], 422);
-        }
-
-        if (!($request->guard === 'user')) {
-            return response()->json([
-                'message' => 'This page is only accessible to user',
-            ], 403);
-        }
-
-        if (!Auth::guard($request->guard)->check()) {
-            return response()->json([
-                'message' => 'Access Denied'
-            ], 401);
-        }   // [Client Errors]
-
-        $message = $request->consent ? $message = "User consent is registered" : $message = "User reject is registered";
-
-        if ($request->consent) {
-            $order->update(['status' => 101]);
-        } else {
-            $order->update(['status' => 102]);
-        }
-
-        $updated = Order::find($order->id);
-
-        return response()->json([
-            'message' => $message,
-            'order' => $updated,
-        ], 200);
-    }
-
     public function orderAuthentication(Request $request, Cart $cart)
     {
         $validator = Validator::make($request->all(), [
@@ -342,7 +298,45 @@ class OrderController extends Controller
             'message' => 'This is a valid order',
             'result' => true
         ], 200);
+    }
 
+    public function orderUpdate(Request $request, Order $order)
+    {
+        $validator = Validator::make($request->all(), [
+            'status_code' => 'required|numeric',
+        ]);
 
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors(),
+            ], 422);
+        }
+
+        $status_codes = array(
+            200, 201,
+            300, 301,
+            400,
+        );
+
+        if (!in_array((integer)$request->status_code, $status_codes)) {
+            return response()->json([
+                'message' => 'This is an invalid status code'
+            ], 422);
+        }
+
+        $cart = Cart::where('id', $order->order_cart);
+        $order_status = (integer)$request->status_code;
+        $cart_status = $order_status + 10;
+
+        $order->update(['status' => $order_status]);
+
+        if ($order_status === 400)
+            $cart->update(['status' => 110]);
+        else
+            $cart->update(['status' => $cart_status]);
+        
+        return response()->json([
+            'message' => 'Status Update Success'
+        ]);
     }
 }

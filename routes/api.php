@@ -43,8 +43,8 @@ Route::prefix('orders')->group(function () {
     Route::post('/', 'OrderController@orderRegister');
     Route::get('check', 'OrderController@orderCheck');
     Route::get('show', 'OrderController@orderShow');
-    Route::patch('{order}', 'OrderController@orderConsentUpdate');
     Route::get('{cart}/orderAuth', 'OrderController@orderAuthentication');
+    Route::patch('{order}', 'OrderController@orderUpdate');
 });
 
 Route::prefix('consent')->group(function () {
@@ -57,6 +57,5 @@ Route::prefix('routes')->group(function () {
     Route::post('/', 'RouteController@routeStore');
     Route::delete('{route}', 'RouteController@routeDestroy');
 });
-Route::get('routes', 'RouteController@routeIndex');
 
 Route::get('user/request', 'UserController@receiverSearch');
