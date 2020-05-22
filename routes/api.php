@@ -45,8 +45,11 @@ Route::prefix('orders')->group(function () {
     Route::get('show', 'OrderController@orderShow');
     Route::patch('{order}', 'OrderController@orderConsentUpdate');
     Route::get('{cart}/orderAuth', 'OrderController@orderAuthentication');
+});
 
-    Route::get('/consent', 'FcmController@consentRequest');
+Route::prefix('consent')->group(function () {
+    Route::get('request', 'FcmController@consentRequest');
+    Route::get('response', 'FcmController@consentResponse');
 });
 
 Route::get('routes', 'RouteController@routeIndex');
