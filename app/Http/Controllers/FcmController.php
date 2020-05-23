@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use LaravelFCM\Message\OptionsBuilder;
-use LaravelFCM\Message\PayloadDataBuilder;
 use LaravelFCM\Message\PayloadNotificationBuilder;
 use LaravelFCM\Facades\FCM;
 
@@ -41,22 +40,28 @@ class FcmController extends Controller
 
         $sender = $request->user($request->guard);
 
-        $orderInfo = Order::select('users.name', 'users.fcm_token', 'orders.reverse_direction', 'routes.starting_point', 'routes.arrival_point', 'routes.travel_time')
+        $order_info = Order::select('users.name', 'users.fcm_token', 'orders.reverse_direction', 'routes.starting_point', 'routes.arrival_point', 'routes.travel_time')
             ->where('orders.id', $request->order_id)
             ->where('orders.sender', $sender->id)
             ->join('users', 'orders.receiver', 'users.id')
             ->join('routes', 'orders.order_route', 'routes.id')
             ->get()->first();
 
-        $startingPoint = Waypoint::where('id', $orderInfo->starting_point)
+        if (empty($order_info)) {
+            return response()->json([
+                'message' => 'There is no matching order information'
+            ], 404);
+        }
+
+        $starting_point = Waypoint::where('id', $order_info->starting_point)
             ->get()->first()->name;
-        $arrivalPoint = Waypoint::where('id', $orderInfo->arrival_point)
+        $arrival_point = Waypoint::where('id', $order_info->arrival_point)
             ->get()->first()->name;
 
-        (boolean)$orderInfo->reverse_direction ? list($arrivalPoint, $startingPoint) = array($startingPoint, $arrivalPoint) : '';
+        (boolean)$order_info->reverse_direction ? list($arrival_point, $starting_point) = array($starting_point, $arrival_point) : '';
 
-        $message_title = $orderInfo->name . '님께 새로운 동의 요청이 도착했습니다.';
-        $message_body = $sender->name . '님께서 ' . $startingPoint . '에서 ' . $arrivalPoint . '으로 물건 배송을 요청하였습니다.';
+        $message_title = $order_info->name . '님께 새로운 동의 요청이 도착했습니다.';
+        $message_body = $sender->name . '님께서 ' . $starting_point . '에서 ' . $arrival_point . '으로 물건 배송을 요청하였습니다.';
 
         $optionBuilder = new OptionsBuilder();
         $optionBuilder->setTimeToLive(60 * 20);
@@ -70,7 +75,7 @@ class FcmController extends Controller
         $option = $optionBuilder->build();
         $notification = $notificationBuilder->build();
 
-        $token = $orderInfo->fcm_token;
+        $token = $order_info->fcm_token;
 
         $downstreamResponse = FCM::sendTo($token, $option, $notification);
 
@@ -123,14 +128,21 @@ class FcmController extends Controller
 
         $receiver = $request->user($request->guard);
 
-        $orderInfo = Order::select('users.name', 'users.fcm_token', 'orders.status')
+        $order_info = Order::select('users.name', 'users.fcm_token', 'orders.status')
             ->where('orders.id', $request->order_id)
             ->where('orders.receiver', $receiver->id)
             ->join('users', 'orders.sender', 'users.id')
             ->get()->first();
+
+        if (empty($order_info)) {
+            return response()->json([
+                'message' => 'There is no matching order information'
+            ], 404);
+        }
+
         $order = Order::where('id', $request->order_id);
 
-        $message_title = $orderInfo->name . '님께 요청 결과가 도착했습니다.';
+        $message_title = $order_info->name . '님께 요청 결과가 도착했습니다.';
         $message_body = $receiver->name . '님께서 주문 요청을 ';
 
         if ((boolean)$request->consent_or_not) {
@@ -152,7 +164,7 @@ class FcmController extends Controller
         $option = $optionBuilder->build();
         $notification = $notificationBuilder->build();
 
-        $token = $orderInfo->fcm_token;
+        $token = $order_info->fcm_token;
 
         $downstreamResponse = FCM::sendTo($token, $option, $notification);
 
