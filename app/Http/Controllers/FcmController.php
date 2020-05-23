@@ -52,7 +52,6 @@ class FcmController extends Controller
             ->get()->first()->name;
         $arrivalPoint = Waypoint::where('id', $orderInfo->arrival_point)
             ->get()->first()->name;
-//        $travel_time = $orderInfo->travel_time;
 
         (boolean)$orderInfo->reverse_direction ? list($arrivalPoint, $startingPoint) = array($startingPoint, $arrivalPoint) : '';
 
@@ -63,20 +62,17 @@ class FcmController extends Controller
         $optionBuilder->setTimeToLive(60 * 20);
 
         $notificationBuilder = new PayloadNotificationBuilder($message_title);
-//        $notificationBuilder->setBody($sender->name . '님께서 ' . $startingPoint . '에서 ' . $arrivalPoint . '으로(출발 후 '.$travel_time.'분 뒤 도착 예정) 물건 배송을 요청하였습니다')
-//            ->setSound('default');
-        $notificationBuilder->setBody($message_body)->setSound('default');
-
-        $dataBuilder = new PayloadDataBuilder();
-        $dataBuilder->addData(['a_data' => 'my_data']);
+        $notificationBuilder
+            ->setBody($message_body)
+            ->setSound('default')
+            ->setClickAction('ConsentActivity');
 
         $option = $optionBuilder->build();
         $notification = $notificationBuilder->build();
-        $data = $dataBuilder->build();
 
         $token = $orderInfo->fcm_token;
 
-        $downstreamResponse = FCM::sendTo($token, $option, $notification, $data);
+        $downstreamResponse = FCM::sendTo($token, $option, $notification);
 
         $downstreamResponse->numberSuccess();
         $downstreamResponse->numberFailure();
@@ -96,11 +92,6 @@ class FcmController extends Controller
 
         return response()->json([
             'message' => 'Consent Request Success',
-//            'sender' => $sender->name,
-//            'reciver' => $orderInfo->name,
-//            'starting_point' => $startingPoint,
-//            'arrival_point' => $arrivalPoint,
-//            'order' => $orderInfo,
         ]);
     }
 
@@ -154,19 +145,16 @@ class FcmController extends Controller
         $optionBuilder->setTimeToLive(60 * 20);
 
         $notificationBuilder = new PayloadNotificationBuilder($message_title);
-        $notificationBuilder->setBody($message_body)
+        $notificationBuilder
+            ->setBody($message_body)
             ->setSound('default');
-
-        $dataBuilder = new PayloadDataBuilder();
-        $dataBuilder->addData(['a_data' => 'my_data']);
 
         $option = $optionBuilder->build();
         $notification = $notificationBuilder->build();
-        $data = $dataBuilder->build();
 
         $token = $orderInfo->fcm_token;
 
-        $downstreamResponse = FCM::sendTo($token, $option, $notification, $data);
+        $downstreamResponse = FCM::sendTo($token, $option, $notification);
 
         $downstreamResponse->numberSuccess();
         $downstreamResponse->numberFailure();

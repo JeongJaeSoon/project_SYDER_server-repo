@@ -75,8 +75,6 @@ class OrderController extends Controller
                     'message' => $validator->errors(),
                 ], 422);
             }
-
-            // TODO : 수신자에게 동의여부를 확인
         }
 
         if (!($request->guard === 'user')) {
@@ -115,7 +113,7 @@ class OrderController extends Controller
     {
         // [CHECK VALIDADATION]
         $validator = Validator::make($request->all(), [
-            'guard' => 'required|string'
+            'guard' => 'required|string',
         ]);
 
         // [Client Errors]
@@ -137,11 +135,11 @@ class OrderController extends Controller
             ], 401);
         }   // [Client Errors]
 
-        $userId = $request->user($request->guard)->id;
+        $user_id = $request->user($request->guard)->id;
 
-        $order = Order::where('sender', $userId)
-            ->where('status', '<>', '3')
-            ->get()->first();
+        $order = Order::where('sender', $user_id)
+            ->orWhere('receiver', $user_id)
+            ->get()->where('status','<>', 400);
 
         if ($order->count() >= 1) {
             return response()->json([
@@ -162,7 +160,7 @@ class OrderController extends Controller
     {
         // [CHECK VALIDATION]
         $validator = Validator::make($request->all(), [
-            'startingId' => 'required|numeric',
+            'starting_id' => 'required|numeric',
             'guard' => 'required|string',
         ]);
 
@@ -186,25 +184,25 @@ class OrderController extends Controller
         }   // [Client Errors]
 
         // Check for available carts
-        $remainCarts = Cart::select('id', 'status', 'cart_location')
+        $remain_carts = Cart::select('id', 'status', 'cart_location')
             ->where('status', 110)
             ->get();
 
         // [IF] There is no available cart => RETURN
-        if (!$remainCarts->count()) {
-            $remainOrders = Order::where('status', 900)->get()->count();
+        if (!$remain_carts->count()) {
+            $remain_orders = Order::where('status', 900)->get()->count();
 
             return response()->json([
                 'message' => 'There is no available cart',
-                'remain_order' => $remainOrders,
+                'remain_order' => $remain_orders,
             ], 200);
         }
 
         // [IF] Cart is at the starting Point
-        foreach ($remainCarts as $cart) {
+        foreach ($remain_carts as $cart) {
             $cart_location = $cart->cart_location;
 
-            if ($cart_location == $request->startingId) {
+            if ($cart_location == $request->starting_id) {
                 $cart->update(['status' => 111]);
 
                 return response()->json([
@@ -216,16 +214,16 @@ class OrderController extends Controller
         }
 
         // [QUERY] Find cart at nearby waypoint
-        $closeRoutesFirst = Route::select('id', 'arrival_point', 'travel_time')
-            ->where('starting_point', $request->startingId);
-        $closeRoutes = Route::select('id', 'starting_point as waypoint', 'travel_time')
-            ->where('arrival_point', $request->startingId)
-            ->union($closeRoutesFirst)
+        $close_routes_first = Route::select('id', 'arrival_point', 'travel_time')
+            ->where('starting_point', $request->starting_id);
+        $close_routes = Route::select('id', 'starting_point as waypoint', 'travel_time')
+            ->where('arrival_point', $request->starting_id)
+            ->union($close_routes_first)
             ->orderBy('travel_time')
             ->get();
 
-        foreach ($closeRoutes as $route) {
-            foreach ($remainCarts as $cart) {
+        foreach ($close_routes as $route) {
+            foreach ($remain_carts as $cart) {
 
                 // [IF] Cart is at the nearby starting waypoint
                 if ($cart->cart_location == $route->waypoint) {
@@ -246,9 +244,9 @@ class OrderController extends Controller
     public function orderAuthentication(Request $request, Cart $cart)
     {
         $validator = Validator::make($request->all(), [
-            'orderId' => 'required|numeric',
-            'userId' => 'required|numeric',
-            'userCategory' => 'required|string',
+            'order_id' => 'required|numeric',
+            'user_id' => 'required|numeric',
+            'user_category' => 'required|string',
             'guard' => 'required|string',
         ]);
 
@@ -273,19 +271,19 @@ class OrderController extends Controller
 
         $sender = $receiver = $status = '';
 
-        if ($request->userCategory === 'sender') {
+        if ($request->user_category === 'sender') {
             $sender = $request->user($request->guard)->id;
-            $receiver = $request->userId;
+            $receiver = $request->user_id;
             $status = 200;
-        } else if ($request->userCategory === 'receiver') {
-            $sender = $request->userId;
+        } else if ($request->user_category === 'receiver') {
+            $sender = $request->user_id;
             $receiver = $request->user($request->guard)->id;
             $status = 201;
         }
 
         $order = Order::where('status', $status)
             ->where('sender', $sender)->where('receiver', $receiver)
-            ->where('id', $request->orderId)->where('order_cart', $cart->id)
+            ->where('id', $request->order_id)->where('order_cart', $cart->id)
             ->get()->first();
 
         if ($order == null)
