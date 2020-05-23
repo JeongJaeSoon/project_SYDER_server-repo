@@ -139,23 +139,27 @@ class OrderController extends Controller
 
         $order = Order::where('sender', $user_id)
             ->orWhere('receiver', $user_id)
-            ->get()->where('status','<>', 400);
+            ->get()->where('status', '<>', 400);
 
-        if ($order->count() >= 1) {
+        if ($order->count() === 1) {
             return response()->json([
                 'message' => 'There is already a order in progress',
-                'order' => $order,
+                'order' => $order->first(),
                 'availability' => false,
+            ], 200);
+        } else if ($order->count() === 0) {
+            return response()->json([
+                'message' => 'There are no orders in progress',
+                'availability' => true,
             ], 200);
         }
 
         return response()->json([
-            'message' => 'There are no orders in progress',
-            'availability' => true,
-        ], 200);
+            'message' => 'Please contact the Admin',
+        ], 404);
     }
 
-    // API : [GET] /api/order/show
+// API : [GET] /api/order/show
     public function orderShow(Request $request)
     {
         // [CHECK VALIDATION]
