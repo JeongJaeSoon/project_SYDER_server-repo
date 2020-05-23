@@ -15,10 +15,10 @@ class CreateOrdersTable extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->bigIncrements('id');
-            // 정차 상태 => 100 : 배정 완료                 101 : 수신자 동의                 102 : 수신자 거절
+            // 정차 상태 => 100 : 배정 완료                 101 : 수신자 동의
             // 대기 상태 => 200 : 출발지 대기 중            201 : 도착지 대기 중
             // 이동 상태 => 300 : 도착지로 차량 이동 중     301 : 출발지로 차량 이동 중
-            // 주문 상태 => 400 : 주문 종료                 401 : 주문 취소
+            // 주문 상태 => 400 : 주문 종료                 401 : 주문 취소                 402 : 수신자 거절로 취소
             // 기타 상태 => 900 : 차량 배정 대기
             $table->smallInteger('status');
             $table->unsignedBigInteger('sender');

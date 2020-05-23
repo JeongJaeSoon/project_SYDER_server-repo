@@ -145,12 +145,14 @@ class FcmController extends Controller
         $message_title = $order_info->name . '님께 요청 결과가 도착했습니다.';
         $message_body = $receiver->name . '님께서 주문 요청을 ';
 
+        $order->update(['approved_time' => now()]);
+
         if ((boolean)$request->consent_or_not) {
             $message_body .= '동의하셨습니다.';
             $order->update(['status' => 101]);
         } else {
             $message_body .= '거절하셨습니다.';
-            $order->update(['status' => 102]);
+            $order->update(['status' => 402]);
         }
 
         $optionBuilder = new OptionsBuilder();

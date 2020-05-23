@@ -139,7 +139,10 @@ class OrderController extends Controller
 
         $order = Order::where('sender', $user_id)
             ->orWhere('receiver', $user_id)
-            ->get()->where('status', '<>', 400);
+            ->get()
+            ->where('status', '<>', 400)
+            ->where('status', '<>', 401)
+            ->where('status', '<>', 402);
 
         if ($order->count() === 1) {
             return response()->json([
@@ -331,6 +334,11 @@ class OrderController extends Controller
         $cart_status = $order_status + 10;
 
         $order->update(['status' => $order_status]);
+
+        if ($order_status === 300)
+            $order->update(['depart_time' => now()]);
+        elseif ($order_status === 201)
+            $order->update(['arrival_time' => now()]);
 
         if ($order_status === 400)
             $cart->update(['status' => 110]);
