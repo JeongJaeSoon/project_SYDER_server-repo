@@ -123,10 +123,10 @@
 
 - Classification of detailed order status
 #####
-    - The cart is stopping  | 100 : Assignment completed / 101 : Receiver consent / 102 : Receiver reject
+    - The cart is stopping  | 100 : Assignment completed / 101 : Receiver consent
     - The cart is waiting   | 200 : Wating at starting point / 201 : Waiting at arrival point
     - The cart is moving    | 300 : Moving to arrival point / 301 : Moving to starting point
-    - Order status          | 400 : Order end / 401 : Order cancel
+    - Order status          | 400 : Order end / 401 : Order cancel / 402 : Receiver reject
     - Etc                   | 900 : Waiting for cart assignment
     
 ### [2020.05.10 ~ 2020.05.17]
@@ -144,4 +144,21 @@
     
 - 주문 등록 과정 세부 알고리즘 보완 및 오류 수정
 
-
+### [2020.05.18 ~ 2020.05.25]
+- 경로 관리, 주문 과정 API 추가
+####
+    - Order Update : node.js를 통한 주문 상태 수정, 접근 클라이언트 인증
+    - Route Index / Register / Delete : 경로 조회, 추가(중복 검사 및 접근 클라이언트 인증), 삭제
+    - Order Consent Response : 수신자 응답에 따른 FCM 전송, 주문 상태 수정
+    
+- API 수정 내역
+####
+    - 전화번호 입력 후, 수신자 정보 요청(User Request) 시, 이름 정보 모자이크 처리
+    - Order Consent Update 삭제 (Consent Response 병합)
+    
+- 오류 및 기타 수정 내역
+####
+    - FCM을 통한 Consent Request 동작 과정(Consent Activity 추가) 수정
+    - Order Consent Request / Response 시, 주문 등록된 주문 정보 없을 시 오류 처리
+    - Request 데이터, 주문 상태 코드 수정(102 -> 402)
+    - 주문 등록 갯수 초과 시, 오류 처리
