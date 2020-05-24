@@ -3,14 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Model\Authenticator;
-use App\Route;
-use App\Waypoint;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
-use phpDocumentor\Reflection\DocBlock\Tags\Reference\Url;
 
 class LoginController extends Controller
 {
@@ -19,7 +16,6 @@ class LoginController extends Controller
      */
     private $authenticator;
 
-    // Authenticator where 수정함
     public function __construct(Authenticator $authenticator)
     {
         $this->authenticator = $authenticator;

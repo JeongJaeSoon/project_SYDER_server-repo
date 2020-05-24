@@ -5,12 +5,23 @@ namespace App\Http\Controllers;
 use App\Cart;
 use App\Order;
 use App\Route;
+use App\Model\Authenticator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
 class OrderController extends Controller
 {
+    /**
+     * @var Authenticator
+     */
+    private $authenticator;
+
+    public function __construct(Authenticator $authenticator)
+    {
+        $this->authenticator = $authenticator;
+    }
+
     // API : [GET] /api/order
     public function orderIndex(Request $request)
     {
@@ -307,6 +318,18 @@ class OrderController extends Controller
 
     public function orderUpdate(Request $request, Order $order)
     {
+        define("client", "master");
+        $client = client."@node.js";
+        $ip = $request->ip();
+
+        $credentials = array_values(array($client, $ip, 'admins'));
+
+        if (!$this->authenticator->attempt(...$credentials)) {
+            return response()->json([
+                'message' => 'This is an inaccessible request',
+            ], 401);
+        }
+
         $validator = Validator::make($request->all(), [
             'status_code' => 'required|numeric',
         ]);

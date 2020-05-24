@@ -3,12 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Route;
+use App\Model\Authenticator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
 class RouteController extends Controller
 {
+    /**
+     * @var Authenticator
+     */
+    private $authenticator;
+
+    public function __construct(Authenticator $authenticator)
+    {
+        $this->authenticator = $authenticator;
+    }
+
     public function routeIndex(Request $request)
     {
         // [CHECK VALIDATION]
@@ -44,6 +55,18 @@ class RouteController extends Controller
 
     public function routeStore(Request $request)
     {
+        define("client", "master");
+        $client = client."@node.js";
+        $ip = $request->ip();
+
+        $credentials = array_values(array($client, $ip, 'admins'));
+
+        if (!$this->authenticator->attempt(...$credentials)) {
+            return response()->json([
+                'message' => 'This is an inaccessible request',
+            ], 401);
+        }
+
         $validator = Validator::make($request->all(), [
             'starting_point' => 'required|numeric',
             'arrival_point' => 'required|numeric',
@@ -69,17 +92,36 @@ class RouteController extends Controller
             ], 401);
         }
 
-        $route = Route::create([
-            'starting_point' => $request->starting_point,
-            'arrival_point' => $request->arrival_point,
-            'travel_time' => $request->travel_time,
-            'travel_distance' => $request->travel_distance
-        ]);
+        if ($request->starting_point === $request->arrival_point) {
+            return response()->json([
+                'message' => 'Route that cannot be registered'
+            ], 422);
+        }
+
+        if (
+            empty(Route::where('starting_point', $request->starting_point)
+                ->where('arrival_point', $request->arrival_point)
+                ->get()->first()) &&
+            empty(Route::where('starting_point', $request->arrival_point)
+                ->where('arrival_point', $request->starting_point)
+                ->get()->first())
+        ) {
+            $route = Route::create([
+                'starting_point' => $request->starting_point,
+                'arrival_point' => $request->arrival_point,
+                'travel_time' => $request->travel_time,
+                'travel_distance' => $request->travel_distance
+            ]);
+
+            return response()->json([
+                'message' => 'Route Registration Success',
+                'route' => $route
+            ], 201);
+        }
 
         return response()->json([
-            'message' => 'Route Registration Success',
-            'route' => $route
-        ], 201);
+            'message' => 'This route already exists',
+        ], 422);
     }
 
     public function routeDestroy(Request $request, Route $route)
@@ -95,7 +137,7 @@ class RouteController extends Controller
         }
 
         if (!($request->guard === 'admin')) {
-            return response() -> json([
+            return response()->json([
                 'message' => 'This page is only accessible to admin',
             ], 403);
         }
