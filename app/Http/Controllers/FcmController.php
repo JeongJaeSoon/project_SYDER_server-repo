@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use LaravelFCM\Message\OptionsBuilder;
+use LaravelFCM\Message\PayloadDataBuilder;
 use LaravelFCM\Message\PayloadNotificationBuilder;
 use LaravelFCM\Facades\FCM;
 
@@ -127,6 +128,7 @@ class FcmController extends Controller
         }
 
         $receiver = $request->user($request->guard);
+        $receiver_activity = "";
 
         $order_info = Order::select('users.name', 'users.fcm_token', 'orders.status')
             ->where('orders.id', $request->order_id)
@@ -149,10 +151,12 @@ class FcmController extends Controller
 
         if ((boolean)$request->consent_or_not) {
             $message_body .= '동의하셨습니다.';
+            $receiver_activity = 'AgreeActivity';
             $order->update(['status' => 101]);
         } else {
             $message_body .= '거절하셨습니다.';
             $order->update(['status' => 402]);
+            $receiver_activity = 'DisagreeActivity';
         }
 
         $optionBuilder = new OptionsBuilder();
@@ -161,14 +165,19 @@ class FcmController extends Controller
         $notificationBuilder = new PayloadNotificationBuilder($message_title);
         $notificationBuilder
             ->setBody($message_body)
-            ->setSound('default');
+            ->setSound('default')
+            ->setClickAction($receiver_activity);
+
+        $dataBuilder = new PayloadDataBuilder();
+        $dataBuilder->addData(['receiver_fcm_token' => $receiver->fcm_token]);
 
         $option = $optionBuilder->build();
         $notification = $notificationBuilder->build();
+        $data = $dataBuilder->build();
 
         $token = $order_info->fcm_token;
 
-        $downstreamResponse = FCM::sendTo($token, $option, $notification);
+        $downstreamResponse = FCM::sendTo($token, $option, $notification, $data);
 
         $downstreamResponse->numberSuccess();
         $downstreamResponse->numberFailure();
@@ -187,8 +196,7 @@ class FcmController extends Controller
         $downstreamResponse->tokensWithError();
 
         return response()->json([
-            'message' => 'Consent Request Success',
-            'receiver_token' => $receiver->fcm_token,
+            'message' => 'Consent Response Success',
         ]);
 
     }
