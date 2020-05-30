@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Cart;
 use App\Order;
 use App\Route;
-use App\User;
 use App\Model\Authenticator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -352,6 +351,7 @@ class OrderController extends Controller
 
         $validator = Validator::make($request->all(), [
             'status_code' => 'required|numeric',
+            'cart_location' => 'required|numeric',
         ]);
 
         if ($validator->fails()) {
@@ -384,21 +384,22 @@ class OrderController extends Controller
             $order->update(['arrival_time' => now()]);
 
         if ($order_status === 400) {
-            $cart->update(['status' => 110]);
-            $waiting_sender = Order::select('sender')
-                ->where('status', 900)->get()->first();
+            $waiting_order = Order::where('status', 900)->get()->first();
 
-            $test = '';
-            if (!is_null($waiting_sender)) {
-                $test = User::where('id', $waiting_sender->sender)->get();
+            if (!is_null($waiting_order)) {
+                $cart->update([
+                    'status' => 111,
+                    'cart_location' => $request->cart_location,
+                ]);
+                $waiting_order->update([
+                    'status' => 101,
+                    'order_cart' => $cart->first()->id,
+                ]);
 
-            }
-
-            return response()->json([
-                'message' => 'dddd',
-                'result' => $waiting_sender,
-                'test' => $test
-            ]);
+                $fcm_to_sender = new FcmController();
+                $fcm_to_sender->waitingOrderProcessing($waiting_order, $cart->first());
+            } else
+                $cart->update(['status' => 110]);
         } else
             $cart->update(['status' => $cart_status]);
 
