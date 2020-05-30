@@ -6,6 +6,7 @@ use App\Cart;
 use App\Order;
 use App\Route;
 use App\Model\Authenticator;
+use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -61,7 +62,7 @@ class OrderController extends Controller
         // [CHECK VALIDATION]
         $validator = Validator::make($request->all(), [
             'receiver' => 'required|numeric',
-            'order_cart' => 'required|numeric',
+            'order_availability' => 'required|boolean',
             'order_route' => 'required|numeric',
             'reverse_direction' => 'required|boolean',
             'cartMove_needs' => 'required|boolean',
@@ -73,6 +74,22 @@ class OrderController extends Controller
             return response()->json([
                 'message' => $validator->errors()
             ], 422);
+        }
+
+        if ((bool)$request->order_availability) {
+            $validator = Validator::make($request->all(), [
+                'order_cart' => 'required|numeric',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => $validator->errors()
+                ], 422);
+            }
+        } else if (!is_null($request->order_cart)) {
+            return response()->json([
+                'message' => 'Please contact the Admin'
+            ], 404);
         }
 
         // [IF] Cart need to move to the starting point
@@ -101,10 +118,11 @@ class OrderController extends Controller
         }   // [Client Errors]
 
         $sender = $request->user($request->guard);
+        $order_status = (bool)$request->order_availability ? 100 : 900;
 
         // [QUERY] Register order
         $order = Order::create([
-            'status' => 100,
+            'status' => $order_status,
             'sender' => $sender->id,
             'receiver' => $request->receiver,
             'order_cart' => $request->order_cart,
@@ -318,8 +336,10 @@ class OrderController extends Controller
 
     public function orderUpdate(Request $request, Order $order)
     {
+        /*
+         * TODO : 주석 풀기
         define("client", "master");
-        $client = client."@node.js";
+        $client = client . "@node.js";
         $ip = $request->ip();
 
         $credentials = array_values(array($client, $ip, 'admins'));
@@ -328,7 +348,7 @@ class OrderController extends Controller
             return response()->json([
                 'message' => 'This is an inaccessible request',
             ], 401);
-        }
+        }*/
 
         $validator = Validator::make($request->all(), [
             'status_code' => 'required|numeric',
@@ -363,9 +383,23 @@ class OrderController extends Controller
         elseif ($order_status === 201)
             $order->update(['arrival_time' => now()]);
 
-        if ($order_status === 400)
+        if ($order_status === 400) {
             $cart->update(['status' => 110]);
-        else
+            $waiting_sender = Order::select('sender')
+                ->where('status', 900)->get()->first();
+
+            $test = '';
+            if (!is_null($waiting_sender)) {
+                $test = User::where('id', $waiting_sender->sender)->get();
+
+            }
+
+            return response()->json([
+                'message' => 'dddd',
+                'result' => $waiting_sender,
+                'test' => $test
+            ]);
+        } else
             $cart->update(['status' => $cart_status]);
 
         return response()->json([

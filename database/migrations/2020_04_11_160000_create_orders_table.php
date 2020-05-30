@@ -23,7 +23,7 @@ class CreateOrdersTable extends Migration
             $table->smallInteger('status');
             $table->unsignedBigInteger('sender');
             $table->unsignedBigInteger('receiver');
-            $table->unsignedBigInteger('order_cart');
+            $table->unsignedBigInteger('order_cart')->nullable();
             $table->unsignedBigInteger('order_route');
             $table->boolean('reverse_direction');
             $table->timestamp('request_time');

@@ -188,7 +188,6 @@ class FcmController extends Controller
 
         return response()->json([
             'message' => 'Consent Request Success',
-            'receiver_token' => $receiver->fcm_token,
         ]);
 
     }
