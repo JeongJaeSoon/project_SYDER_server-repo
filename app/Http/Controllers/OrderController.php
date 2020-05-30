@@ -335,8 +335,6 @@ class OrderController extends Controller
 
     public function orderUpdate(Request $request, Order $order)
     {
-        /*
-         * TODO : 주석 풀기
         define("client", "master");
         $client = client . "@node.js";
         $ip = $request->ip();
@@ -347,7 +345,7 @@ class OrderController extends Controller
             return response()->json([
                 'message' => 'This is an inaccessible request',
             ], 401);
-        }*/
+        }
 
         $validator = Validator::make($request->all(), [
             'status_code' => 'required|numeric',
