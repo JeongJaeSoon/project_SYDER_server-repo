@@ -48,7 +48,6 @@ class UserController extends Controller
         // [CHECK VALIDATION]
         $validator = Validator::make($request->all(), [
             'phone' => 'required|string|digits_between:11,12',
-            'guard' => 'required|string',
         ]);
 
         // [Client Errors]
@@ -63,12 +62,6 @@ class UserController extends Controller
                 'message' => 'This page is only accessible to user',
             ], 403);
         }
-
-        if (!Auth::guard($request->guard)->check()) {
-            return response()->json([
-                'message' => 'Access Denied'
-            ], 401);
-        }   // [Client Errors]
 
         $result = User::select('id', 'name')->where('phone', $request->phone)->get()->first();
 

@@ -10,16 +10,6 @@ use Illuminate\Support\Facades\Validator;
 
 class RouteController extends Controller
 {
-    /**
-     * @var Authenticator
-     */
-    private $authenticator;
-
-    public function __construct(Authenticator $authenticator)
-    {
-        $this->authenticator = $authenticator;
-    }
-
     public function routeIndex(Request $request)
     {
         // [CHECK VALIDATION]
@@ -55,18 +45,6 @@ class RouteController extends Controller
 
     public function routeStore(Request $request)
     {
-        define("client", "master");
-        $client = client."@node.js";
-        $ip = $request->ip();
-
-        $credentials = array_values(array($client, $ip, 'admins'));
-
-        if (!$this->authenticator->attempt(...$credentials)) {
-            return response()->json([
-                'message' => 'This is an inaccessible request',
-            ], 401);
-        }
-
         $validator = Validator::make($request->all(), [
             'starting_point' => 'required|numeric',
             'arrival_point' => 'required|numeric',
@@ -78,18 +56,6 @@ class RouteController extends Controller
             return response()->json([
                 'message' => $validator->errors(),
             ], 422);
-        }
-
-        if (!($request->guard === 'admin')) {
-            return response()->json([
-                'message' => 'This page is only accessible to admin',
-            ], 403);
-        }
-
-        if (!Auth::guard($request->guard)->check()) {
-            return response()->json([
-                'message' => 'Access Denied',
-            ], 401);
         }
 
         if ($request->starting_point === $request->arrival_point) {
@@ -126,26 +92,10 @@ class RouteController extends Controller
 
     public function routeDestroy(Request $request, Route $route)
     {
-        $validator = Validator::make($request->all(), [
-            'guard' => 'required|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => $validator->errors()
-            ], 422);
-        }
-
         if (!($request->guard === 'admin')) {
             return response()->json([
                 'message' => 'This page is only accessible to admin',
             ], 403);
-        }
-
-        if (!Auth::guard($request->guard)->check()) {
-            return response()->json([
-                'message' => 'Access Denied',
-            ], 401);
         }
 
         $route->delete();

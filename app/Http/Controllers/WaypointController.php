@@ -12,30 +12,14 @@ class WaypointController extends Controller
     // API : [GET] /api/waypoints
     public function waypointIndex(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'guard' => 'required|string',
-        ]);
-
-        // [Client Errors]
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => $validator->errors()
-            ], 422);
-        }
-
         if (!($request->guard === 'admin' || $request->guard === 'user')) {
             return response()->json([
                 'message' => 'This page is only accessible to admin or user',
             ], 403);
         }
 
-        if (!Auth::guard($request->guard)->check()) {
-            return response()->json([
-                'message' => 'Access Denied'
-            ], 401);
-        }   // [Client Errors]
-
         $waypoints = Waypoint::get();
+
         return response()->json([
             'message' => 'Waypoints Indexing Success',
             'waypoints' => $waypoints
@@ -50,7 +34,6 @@ class WaypointController extends Controller
             'name' => 'required|string|unique:waypoints,name',
             'lat' => 'required|numeric|between:35.894756152459216,35.89740573228205',
             'lng' => 'required|numeric|between:128.62000526129742,128.6236530319387',
-            'guard' => 'required|string',
         ]);
 
         // [Client Errors]
@@ -65,12 +48,6 @@ class WaypointController extends Controller
                 'message' => 'This page is only accessible to admin',
             ], 403);
         }
-
-        if (!Auth::guard($request->guard)->check()) {
-            return response()->json([
-                'message' => 'Access Denied'
-            ], 401);
-        }   // [Client Errors]
 
         $waypoint = Waypoint::create([
             'name' => $request->name,
@@ -91,7 +68,6 @@ class WaypointController extends Controller
         $validator = Validator::make($request->all(), [
             'lat' => 'required|numeric|between:35.894756152459216,35.89740573228205',
             'lng' => 'required|numeric|between:128.62000526129742,128.6236530319387',
-            'guard' => 'required|string',
         ]);
 
         // [Client Errors]
@@ -106,12 +82,6 @@ class WaypointController extends Controller
                 'message' => 'This page is only accessible to admin',
             ], 403);
         }
-
-        if (!Auth::guard($request->guard)->check()) {
-            return response()->json([
-                'message' => 'Access Denied'
-            ], 401);
-        }   // [Client Errors]
 
         $waypoint->update([
             'lat' => $request->lat,
@@ -129,28 +99,11 @@ class WaypointController extends Controller
     // API : [DELETE] /api/waypoints/{waypoint}
     public function waypointDestroy(Request $request, Waypoint $waypoint)
     {
-        $validator = Validator::make($request->all(), [
-            'guard' => 'required|string',
-        ]);
-
-        // [Client Errors]
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => $validator->errors()
-            ], 422);
-        }
-
         if (!($request->guard === 'admin')) {
             return response()->json([
                 'message' => 'This page is only accessible to admin',
             ], 403);
         }
-
-        if (!Auth::guard($request->guard)->check()) {
-            return response()->json([
-                'message' => 'Access Denied'
-            ], 401);
-        }   // [Client Errors]
 
         $waypoint->delete();
 

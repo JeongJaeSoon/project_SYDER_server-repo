@@ -5,48 +5,19 @@ namespace App\Http\Controllers;
 use App\Cart;
 use App\Order;
 use App\Route;
-use App\Model\Authenticator;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
 class OrderController extends Controller
 {
-    /**
-     * @var Authenticator
-     */
-    private $authenticator;
-
-    public function __construct(Authenticator $authenticator)
-    {
-        $this->authenticator = $authenticator;
-    }
-
     // API : [GET] /api/order
     public function orderIndex(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'guard' => 'required|string',
-        ]);
-
-        // [Client Errors]
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => $validator->errors()
-            ], 422);
-        }
-
         if (!($request->guard === 'admin')) {
             return response()->json([
                 'message' => 'This page is only accessible to admin',
             ], 403);
         }
-
-        if (!Auth::guard($request->guard)->check()) {
-            return response()->json([
-                'message' => 'Access Denied'
-            ], 401);
-        }   // [Client Errors]
 
         $orders = Order::get();
         return response()->json([
@@ -65,7 +36,6 @@ class OrderController extends Controller
             'order_route' => 'required|numeric',
             'reverse_direction' => 'required|boolean',
             'cartMove_needs' => 'required|boolean',
-            'guard' => 'required|string',
         ]);
 
         // [Client Errors]
@@ -110,12 +80,6 @@ class OrderController extends Controller
             ], 403);
         }
 
-        if (!Auth::guard($request->guard)->check()) {
-            return response()->json([
-                'message' => 'Access Denied'
-            ], 401);
-        }   // [Client Errors]
-
         $sender = $request->user($request->guard);
         $order_status = (bool)$request->order_availability ? 100 : 900;
 
@@ -139,29 +103,11 @@ class OrderController extends Controller
     // API : [GET] /api/order/check
     public function orderCheck(Request $request)
     {
-        // [CHECK VALIDADATION]
-        $validator = Validator::make($request->all(), [
-            'guard' => 'required|string',
-        ]);
-
-        // [Client Errors]
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => $validator->errors()
-            ], 422);
-        }
-
         if (!($request->guard === 'user')) {
             return response()->json([
                 'message' => 'This page is only accessible to user',
             ], 403);
         }
-
-        if (!Auth::guard($request->guard)->check()) {
-            return response()->json([
-                'message' => 'Access Denied'
-            ], 401);
-        }   // [Client Errors]
 
         $user_id = $request->user($request->guard)->id;
 
@@ -196,7 +142,6 @@ class OrderController extends Controller
         // [CHECK VALIDATION]
         $validator = Validator::make($request->all(), [
             'starting_id' => 'required|numeric',
-            'guard' => 'required|string',
         ]);
 
         // [Client Errors]
@@ -211,12 +156,6 @@ class OrderController extends Controller
                 'message' => 'This page is only accessible to user',
             ], 403);
         }
-
-        if (!Auth::guard($request->guard)->check()) {
-            return response()->json([
-                'message' => 'Access Denied'
-            ], 401);
-        }   // [Client Errors]
 
         // Check for available carts
         $remain_carts = Cart::select('id', 'status', 'cart_location')
@@ -282,7 +221,6 @@ class OrderController extends Controller
             'order_id' => 'required|numeric',
             'user_id' => 'required|numeric',
             'user_category' => 'required|string',
-            'guard' => 'required|string',
         ]);
 
         // [Client Errors]
@@ -297,12 +235,6 @@ class OrderController extends Controller
                 'message' => 'This page is only accessible to user',
             ], 403);
         }
-
-        if (!Auth::guard($request->guard)->check()) {
-            return response()->json([
-                'message' => 'Access Denied'
-            ], 401);
-        }   // [Client Errors]
 
         $sender = $receiver = $status = '';
 
@@ -335,18 +267,6 @@ class OrderController extends Controller
 
     public function orderUpdate(Request $request, Order $order)
     {
-        define("client", "master");
-        $client = client . "@node.js";
-        $ip = $request->ip();
-
-        $credentials = array_values(array($client, $ip, 'admins'));
-
-        if (!$this->authenticator->attempt(...$credentials)) {
-            return response()->json([
-                'message' => 'This is an inaccessible request',
-            ], 401);
-        }
-
         $validator = Validator::make($request->all(), [
             'status_code' => 'required|numeric',
             'cart_location' => 'required|numeric',

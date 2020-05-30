@@ -17,11 +17,49 @@ use LaravelFCM\Facades\FCM;
 
 class FcmController extends Controller
 {
+    private function FcmBuilder($arg_token, $arg_message_title, $arg_message_body, $arg_activity, array $arg_data)
+    {
+        $token = $arg_token;
+
+        $optionBuilder = new OptionsBuilder();
+        $optionBuilder->setTimeToLive(60 * 20);
+
+        $notificationBuilder = new PayloadNotificationBuilder($arg_message_title);
+        $notificationBuilder
+            ->setBody($arg_message_body)
+            ->setSound('default')
+            ->setClickAction($arg_activity);
+
+        $dataBuilder = new PayloadDataBuilder();
+        $dataBuilder->addData($arg_data);
+
+        $option = $optionBuilder->build();
+        $notification = $notificationBuilder->build();
+        $data = $dataBuilder->build();
+
+        $downstreamResponse = FCM::sendTo($token, $option, $notification, $data);
+
+        $downstreamResponse->numberSuccess();
+        $downstreamResponse->numberFailure();
+        $downstreamResponse->numberModification();
+
+        // return Array - you must remove all this tokens in your database
+        $downstreamResponse->tokensToDelete();
+
+        // return Array (key : oldToken, value : new token - you must change the token in your database)
+        $downstreamResponse->tokensToModify();
+
+        // return Array - you should try to resend the message to the tokens in the array
+        $downstreamResponse->tokensToRetry();
+
+        // return Array (key:token, value:error) - in production you should remove from your database the tokens
+        $downstreamResponse->tokensWithError();
+    }
+
     public function consentRequest(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'order_id' => 'required|numeric',
-            'guard' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -34,12 +72,6 @@ class FcmController extends Controller
             return response()->json([
                 'message' => 'This page is only accessible to user',
             ], 403);
-        }
-
-        if (!Auth::guard($request->guard)->check()) {
-            return response()->json([
-                'message' => 'Access Denied'
-            ], 401);
         }
 
         $sender = $request->user($request->guard);
@@ -64,40 +96,13 @@ class FcmController extends Controller
 
         (boolean)$order_info->reverse_direction ? list($arrival_point, $starting_point) = array($starting_point, $arrival_point) : '';
 
+        $token = $order_info->fcm_token;
         $message_title = $order_info->name . '님께 새로운 동의 요청이 도착했습니다.';
         $message_body = $sender->name . '님께서 ' . $starting_point . '에서 ' . $arrival_point . '으로 물건 배송을 요청하였습니다.';
+        $activity = 'ConsentActivity';
+        $data = [];
 
-        $optionBuilder = new OptionsBuilder();
-        $optionBuilder->setTimeToLive(60 * 20);
-
-        $notificationBuilder = new PayloadNotificationBuilder($message_title);
-        $notificationBuilder
-            ->setBody($message_body)
-            ->setSound('default')
-            ->setClickAction('ConsentActivity');
-
-        $option = $optionBuilder->build();
-        $notification = $notificationBuilder->build();
-
-        $token = $order_info->fcm_token;
-
-        $downstreamResponse = FCM::sendTo($token, $option, $notification);
-
-        $downstreamResponse->numberSuccess();
-        $downstreamResponse->numberFailure();
-        $downstreamResponse->numberModification();
-
-        // return Array - you must remove all this tokens in your database
-        $downstreamResponse->tokensToDelete();
-
-        // return Array (key : oldToken, value : new token - you must change the token in your database)
-        $downstreamResponse->tokensToModify();
-
-        // return Array - you should try to resend the message to the tokens in the array
-        $downstreamResponse->tokensToRetry();
-
-        // return Array (key:token, value:error) - in production you should remove from your database the tokens
-        $downstreamResponse->tokensWithError();
+        $this->FcmBuilder($token, $message_title, $message_body, $activity, $data);
 
         return response()->json([
             'message' => 'Consent Request Success',
@@ -106,10 +111,11 @@ class FcmController extends Controller
 
     public function consentResponse(Request $request)
     {
+        $receiver_activity = '';
+
         $validator = Validator::make($request->all(), [
             'order_id' => 'required|numeric',
             'consent_or_not' => 'required|boolean',
-            'guard' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -124,14 +130,7 @@ class FcmController extends Controller
             ], 403);
         }
 
-        if (!Auth::guard($request->guard)->check()) {
-            return response()->json([
-                'message' => 'Accedss Denied'
-            ], 401);
-        }
-
         $receiver = $request->user($request->guard);
-        $receiver_activity = "";
 
         $order_info = Order::select('users.name', 'users.fcm_token', 'orders.status')
             ->where('orders.id', $request->order_id)
@@ -146,11 +145,11 @@ class FcmController extends Controller
         }
 
         $order = Order::where('id', $request->order_id);
+        $order->update(['approved_time' => now()]);
 
+        $token = $order_info->fcm_token;
         $message_title = $order_info->name . '님께 요청 결과가 도착했습니다.';
         $message_body = $receiver->name . '님께서 주문 요청을 ';
-
-        $order->update(['approved_time' => now()]);
 
         if ((boolean)$request->consent_or_not) {
             $message_body .= '동의하셨습니다.';
@@ -162,41 +161,10 @@ class FcmController extends Controller
             $receiver_activity = 'DisagreeActivity';
         }
 
-        $optionBuilder = new OptionsBuilder();
-        $optionBuilder->setTimeToLive(60 * 20);
+        $activity = $receiver_activity;
+        $data = ['receiver_fcm_token' => $receiver->fcm_token];
 
-        $notificationBuilder = new PayloadNotificationBuilder($message_title);
-        $notificationBuilder
-            ->setBody($message_body)
-            ->setSound('default')
-            ->setClickAction($receiver_activity);
-
-        $dataBuilder = new PayloadDataBuilder();
-        $dataBuilder->addData(['receiver_fcm_token' => $receiver->fcm_token]);
-
-        $option = $optionBuilder->build();
-        $notification = $notificationBuilder->build();
-        $data = $dataBuilder->build();
-
-        $token = $order_info->fcm_token;
-
-        $downstreamResponse = FCM::sendTo($token, $option, $notification, $data);
-
-        $downstreamResponse->numberSuccess();
-        $downstreamResponse->numberFailure();
-        $downstreamResponse->numberModification();
-
-        // return Array - you must remove all this tokens in your database
-        $downstreamResponse->tokensToDelete();
-
-        // return Array (key : oldToken, value : new token - you must change the token in your database)
-        $downstreamResponse->tokensToModify();
-
-        // return Array - you should try to resend the message to the tokens in the array
-        $downstreamResponse->tokensToRetry();
-
-        // return Array (key:token, value:error) - in production you should remove from your database the tokens
-        $downstreamResponse->tokensWithError();
+        $this->FcmBuilder($token, $message_title, $message_body, $activity, $data);
 
         return response()->json([
             'message' => 'Consent Response Success',
@@ -205,7 +173,9 @@ class FcmController extends Controller
 
     public function waitingOrderProcessing(Order $order, Cart $cart)
     {
-        $route_info = Route::where('id', $order->order_route)->get()->first();
+        $estimated_time = 0;
+        $route_info = Route::where('id', $order->order_route)
+            ->get()->first();
 
         if ((bool)$order->reverse_direction)
             $starting_point = $route_info->arrival_point;
@@ -215,9 +185,9 @@ class FcmController extends Controller
         $sender = User::select('name', 'fcm_token')
             ->where('id', $order->sender)->get()->first();
 
+        $token = $sender->fcm_token;
         $message_title = $sender->name . '님께서 요청하신 주문이 준비되었습니다.';
-
-        $estimated_time = 0;
+        $message_body = '';
 
         if ($cart->cart_location === $starting_point)
             $message_body = '요청하신 출발지로 가셔서 차량에 물건을 넣으세요.';
@@ -233,39 +203,9 @@ class FcmController extends Controller
             $message_body = $estimated_time . '분 내에 차량이 출발지에 도착할 예정입니다.';
         }
 
-        $optionBuilder = new OptionsBuilder();
-        $optionBuilder->setTimeToLive(60 * 20);
+        $activity = 'MainActivity';
+        $data = ['$estimated_time' => $estimated_time];
 
-        $notificationBuilder = new PayloadNotificationBuilder($message_title);
-        $notificationBuilder
-            ->setBody($message_body)
-            ->setSound('default');
-
-        $dataBuilder = new PayloadDataBuilder();
-        $dataBuilder->addData(['$estimated_time' => $estimated_time]);
-
-        $option = $optionBuilder->build();
-        $notification = $notificationBuilder->build();
-        $data = $dataBuilder->build();
-
-        $token = $sender->fcm_token;
-
-        $downstreamResponse = FCM::sendTo($token, $option, $notification, $data);
-
-        $downstreamResponse->numberSuccess();
-        $downstreamResponse->numberFailure();
-        $downstreamResponse->numberModification();
-
-        // return Array - you must remove all this tokens in your database
-        $downstreamResponse->tokensToDelete();
-
-        // return Array (key : oldToken, value : new token - you must change the token in your database)
-        $downstreamResponse->tokensToModify();
-
-        // return Array - you should try to resend the message to the tokens in the array
-        $downstreamResponse->tokensToRetry();
-
-        // return Array (key:token, value:error) - in production you should remove from your database the tokens
-        $downstreamResponse->tokensWithError();
+        $this->FcmBuilder($token, $message_title, $message_body, $activity, $data);
     }
 }
